@@ -9,9 +9,7 @@ BASE_URL = "https://prsindia.org"
 headers = {"User-Agent": "Mozilla/5.0"}
 
 
-# ==========================
-# SCRAPE SINGLE MP
-# ==========================
+
 def scrape_mp(url):
     response = requests.get(url, headers=headers)
     html = response.text
@@ -43,9 +41,7 @@ def scrape_mp(url):
     }
 
 
-# ==========================
-# GET ALL MP URLS
-# ==========================
+
 def get_mp_urls():
     sitemap_url = "https://prsindia.org/sitemap.xml"
     response = requests.get(sitemap_url, headers=headers)
@@ -56,9 +52,7 @@ def get_mp_urls():
     return list(set(links))
 
 
-# ==========================
-# MAIN PIPELINE
-# ==========================
+
 if __name__ == "__main__":
     mp_urls = get_all_mp_urls()
 
@@ -66,7 +60,7 @@ if __name__ == "__main__":
 
     data = []
 
-    for url in mp_urls[:10]:  # scrape first 10
+    for url in mp_urls[:10]:  
         print("Scraping:", url)
         mp_data = scrape_mp(url)
         data.append(mp_data)
