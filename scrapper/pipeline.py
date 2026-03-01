@@ -3,70 +3,121 @@ import re
 import pandas as pd
 import time
 from bs4 import BeautifulSoup
-from mp_list_scrapper import get_all_mp_urls
 
 BASE_URL = "https://prsindia.org"
 headers = {"User-Agent": "Mozilla/5.0"}
 
+session = requests.Session()
+session.headers.update(headers)
 
 
-def scrape_mp(url):
-    response = requests.get(url, headers=headers)
-    html = response.text
-    soup = BeautifulSoup(html, "html.parser")
+def get_all_mp_data():
+    all_data = []
+    seen_profiles = set()
+    page = 1
+    MAX_PAGES = 80
 
-    # Extract Name
-    name_tag = soup.find("h1")
-    name = name_tag.text.strip() if name_tag else "N/A"
+    while page <= MAX_PAGES:
+        print(f"Fetching page {page}")
 
-    # Extract chart data from JS
-    chart_blocks = re.findall(r'arrayToDataTable\((.*?)\);', html, re.S)
+        url = f"https://prsindia.org/mptrack?slug1=18th-lok-sabha&page={page}&per-page=9&parliament=Lok+Sabha&MpTrackSearch%5Bloc_sabha%5D=18th_lok_sabha"
 
-    attendance = debates = questions = "N/A"
+        response = session.get(url, timeout=10)
+        soup = BeautifulSoup(response.text, "html.parser")
 
-    def extract_first_value(block):
-        match = re.search(r'\["",\s*([\d.]+)', block)
-        return match.group(1) if match else None
+        cards = soup.select("div.views-row")
 
-    if len(chart_blocks) >= 3:
-        attendance = extract_first_value(chart_blocks[0])
-        debates = extract_first_value(chart_blocks[1])
-        questions = extract_first_value(chart_blocks[2])
+        if not cards:
+            break
 
-    return {
-        "name": name,
-        "attendance": attendance,
-        "debates": debates,
-        "questions": questions
-    }
+        for card in cards:
 
+            name_tag = card.select_one("h3 a")
+            if not name_tag:
+                continue
 
+            name = name_tag.text.strip()
+            profile_url = BASE_URL + name_tag["href"]
 
-def get_mp_urls():
-    sitemap_url = "https://prsindia.org/sitemap.xml"
-    response = requests.get(sitemap_url, headers=headers)
-    xml = response.text
+            if profile_url in seen_profiles:
+                continue
 
-    links = re.findall(r'https://prsindia\.org/mptrack/18th-lok-sabha/[a-z0-9\-]+', xml)
+            seen_profiles.add(profile_url)
 
-    return list(set(links))
+            # -------------------------
+            # Extract from LIST PAGE
+            # -------------------------
+            state = "N/A"
+            constituency = "N/A"
+            party = "N/A"
 
+            text_lines = list(card.stripped_strings)
+
+            # Structure is:
+            # [Name, State, Constituency, Age, PartyLabel]
+
+            if len(text_lines) >= 4:
+                state = text_lines[1]
+                constituency = text_lines[2]
+                party = text_lines[-1]
+
+            # -------------------------
+            # Extract from PROFILE PAGE
+            # -------------------------
+            attendance = debates = questions = "0"
+
+            profile_response = session.get(profile_url, timeout=10)
+            profile_html = profile_response.text
+
+            chart_blocks = re.findall(
+                r'arrayToDataTable\((.*?)\);',
+                profile_html,
+                re.S
+            )
+
+            def extract(block):
+                m = re.search(r'\["",\s*([\d.]+)', block)
+                return m.group(1) if m else "0"
+
+            if len(chart_blocks) >= 3:
+                attendance = extract(chart_blocks[0])
+                debates = extract(chart_blocks[1])
+                questions = extract(chart_blocks[2])
+
+            print("Scraped:", name)
+
+            all_data.append({
+                "name": name,
+                "state": state,
+                "party": party,
+                "constituency": constituency,
+                "attendance": attendance,
+                "debates": debates,
+                "questions": questions
+            })
+
+            time.sleep(0.2)
+
+        page += 1
+
+    return all_data
 
 
 if __name__ == "__main__":
-    mp_urls = get_all_mp_urls()
 
-    print("Total MPs found:", len(mp_urls))
+    print("🚀 Starting LokDrishti Full Pipeline...")
 
-    data = []
+    data = get_all_mp_data()
 
-    for url in mp_urls[:10]:  
-        print("Scraping:", url)
-        mp_data = scrape_mp(url)
-        data.append(mp_data)
-        time.sleep(2)
+    print("Total MPs scraped:", len(data))
 
     df = pd.DataFrame(data)
+
+    df = df[
+        ["name", "state", "party", "constituency",
+         "attendance", "debates", "questions"]
+    ]
+
     df.to_csv("mp_data.csv", index=False)
 
-    print("Saved to mp_data.csv")
+    print("✅ mp_data.csv saved successfully.")
