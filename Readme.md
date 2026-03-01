@@ -1,29 +1,32 @@
-🇮🇳 LokDrishti
-Seeing Democracy Clearly.
+# 🇮🇳 LokDrishti
 
-LokDrishti is an open-source civic-tech project that analyzes the performance of elected representatives using real parliamentary data.
+**LokDrishti** is a civic analytics platform evaluating the performance of Indian Members of Parliament (MPs) using structured 18th Lok Sabha data.
 
-If attendance matters in college, shouldn’t it matter in Parliament too?
+---
 
-🚀 Current Progress (Week 1 — Day 1)
+### 🚀 Vision
+Bringing transparency to governance by treating parliamentary participation with the same rigour as academic attendance.
+* **Transparency:** Data-driven civic insights.
+* **Objectivity:** Scalable ranking engine for elected reps.
 
-✅ Reverse-engineered PRS pagination endpoint
+### 📊 Performance Metric (LCI)
+The **LokDrishti Civic Index (LCI)** is calculated as:
+$$LCI = 0.4(\text{Attendance}) + 0.3(\text{Debates}) + 0.3(\text{Questions})$$
 
-✅ Automated MP list scraping
+### ✅ Current Progress
+* **Data Source:** Official PRS 18th Lok Sabha Dataset (544 MPs).
+* **Engine:** Automated cleaning and normalization layers.
+* **Output:** National, State, and Party-wise rankings.
 
-✅ Extracted real attendance, debates & question data
+### 🏗 Architecture
+* **`data/`**: Raw PRS MP Track CSV.
+* **`processing/`**: Python scripts for cleaning and LCI scoring.
+* **`output/`**: Ranked datasets with constituency-level metrics.
 
-✅ Built structured CSV data pipeline
+### 🔜 Roadmap
+* **Backend:** Migration from CSV/SQLite to PostgreSQL + FastAPI.
+* **Frontend:** Interactive dashboard for public comparisons.
+* **Historical:** Integration of 16th and 17th Lok Sabha data.
 
-No manual data entry.
-Pure backend + data engineering.
-
-📊 Current Extracted Fields
-
-MP Name
-
-Attendance (%)
-
-Debates Participated
-
-Questions Asked
+---
+**Built by [Piyush Ladukar](https://github.com/your-profile)** | *Building in Public*
