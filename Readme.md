@@ -35,3 +35,11 @@ PRS Dataset
 Building API layer to convert this engine into a civic data service.
 
 Let’s see democracy clearly.
+
+
+
+
+## System Architecture
+
+![Architecture](DOCS/architecture.png)
+
