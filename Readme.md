@@ -1,45 +1,106 @@
-LokDrishti
+# LokDrishti
 
-LokDrishti is a civic analytics engine that evaluates MP performance using structured data and performance metrics.
+### Know Before You Vote
 
-📊 Current Features
+LokDrishti is a civic analytics platform that analyzes the performance of Members of Parliament using parliamentary activity data. The platform aims to improve political transparency by converting raw parliamentary data into understandable performance metrics.
 
-LokDrishti Civic Index (LCI)
+---
 
-National / State / Party Rankings
+# Features
 
-Percentile Scoring
+• MP performance analytics
+• National, state, and party rankings
+• Legislative Contribution Index (LCI) scoring
+• Silent MP detection
+• Political performance insights
 
-Silent MP Detection
+---
 
-MP vs MP Comparison
+# System Architecture
 
-State Strength Index
+Frontend (Next.js – upcoming)
+↓
+Flask REST API
+↓
+Service Layer
+↓
+Analytics Engine
+↓
+SQLite Database
 
-Party Dominance Index
+---
 
-Representation Imbalance Detection
+# API Endpoints
 
-Performance Inequality Index
+## MP Data
 
-🏗 Architecture
+GET /api/mps
+GET /api/mps/<name>
 
-PRS Dataset
-→ Data Cleaning
-→ Scoring Engine
-→ Intelligence Layer
-→ SQLite Database
+---
 
-🚀 Next Step
+## Rankings
 
-Building API layer to convert this engine into a civic data service.
+GET /api/rankings/national
+GET /api/rankings/state/<state>
+GET /api/rankings/party/<party>
 
-Let’s see democracy clearly.
+---
 
+## Analytics
 
+GET /api/analytics/state-strength
+GET /api/analytics/party-dominance
+GET /api/analytics/inequality
+GET /api/analytics/imbalance
 
+---
 
-## System Architecture
+# Performance Metrics
 
-![Architecture](DOCS/architecture.png)
+LokDrishti calculates multiple metrics including:
 
+• LCI Score (Legislative Contribution Index)
+• Attendance
+• Debates
+• Questions asked
+• Engagement Index
+• National Rank
+• State Rank
+• Party Rank
+• Percentile ranking
+• Silent MP detection
+
+---
+
+# Tech Stack
+
+Backend
+Python
+Flask
+SQLite
+SQLAlchemy
+Pandas
+
+Frontend (Next Phase)
+Next.js
+React
+TailwindCSS
+
+---
+
+# Project Status
+
+Backend API Layer — Completed
+Frontend Web Application — In Progress
+
+Next milestone:
+Build a Next.js dashboard to visualize MP rankings and analytics.
+
+---
+
+# Vision
+
+LokDrishti aims to make political performance transparent and accessible so citizens can make informed voting decisions.
+
+Know Before You Vote.
