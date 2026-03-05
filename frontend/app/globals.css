@@ -1,107 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
 
 :root {
   --saffron: #FF6B00;
-  --saffron-light: #FF8C38;
-  --saffron-pale: #FFF0E0;
   --navy: #0A1628;
-  --navy-mid: #152340;
-  --navy-light: #1E3A5F;
-  --chakra-blue: #0057A8;
-  --cream: #FFF8F0;
-  --cream-dark: #F5EDE0;
+  --dark: #0D0D0D;
+  --dark-2: #111111;
+  --dark-3: #161616;
   --white: #FFFFFF;
-  --text-primary: #0A1628;
-  --text-secondary: #4A5568;
-  --text-muted: #8A9AB0;
-  --border: #E8DDD0;
-  --success: #16A34A;
-  --danger: #DC2626;
-
-  --font-display: 'Tiro Devanagari Hindi', serif;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-body: 'DM Sans', sans-serif;
-
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 32px;
-
-  --shadow-sm: 0 1px 3px rgba(10,22,40,0.08);
-  --shadow-md: 0 4px 16px rgba(10,22,40,0.12);
-  --shadow-lg: 0 8px 32px rgba(10,22,40,0.16);
-  --shadow-saffron: 0 4px 24px rgba(255,107,0,0.25);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  scroll-behavior: smooth;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--font-body);
-  background: var(--cream);
-  color: var(--text-primary);
-  line-height: 1.6;
+  background: #0D0D0D;
+  color: white;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--cream-dark); }
-::-webkit-scrollbar-thumb { background: var(--saffron); border-radius: 3px; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: #FF6B00; border-radius: 2px; }
 
-/* Ashoka Chakra watermark animation */
+/* Chakra spin - kept for any use */
 @keyframes chakra-spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
 
+/* Ticker scroll */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Pulse dot */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.8); }
+}
+
+/* Fade up */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(24px); }
+  from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes slide-in-right {
-  from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-.animate-fade-up   { animation: fade-up 0.6s ease forwards; }
-.animate-fade-in   { animation: fade-in 0.4s ease forwards; }
-.animate-slide-in  { animation: slide-in-right 0.5s ease forwards; }
-
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
-.delay-500 { animation-delay: 0.5s; }
-
-/* LCI score color coding */
-.lci-high   { color: var(--success); }
-.lci-mid    { color: var(--saffron); }
-.lci-low    { color: var(--danger); }
-
-/* Utility */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.section {
-  padding: 80px 0;
-}
-
-.section-sm {
-  padding: 48px 0;
 }

@@ -1,39 +1,34 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "../components/navbar";
+import Navbar from "@/components/navbar";
 
 export const metadata: Metadata = {
   title: "LokDrishti — Civic Intelligence for India",
-  description:
-    "Data-driven analytics on the performance of Members of Parliament in India's 18th Lok Sabha.",
-  keywords: ["India", "MP", "Parliament", "Lok Sabha", "civic data", "analytics"],
+  description: "Data-driven analytics on the performance of India's 544 Members of Parliament.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
         <Navbar />
-        <main>{children}</main>
-        <footer
-          style={{
-            background: "var(--navy)",
-            color: "var(--text-muted)",
-            textAlign: "center",
-            padding: "32px 24px",
-            fontFamily: "var(--font-body)",
-            fontSize: "14px",
-            marginTop: "80px",
-          }}
-        >
-          <span style={{ color: "var(--saffron)", fontWeight: 600 }}>
-            LokDrishti
-          </span>{" "}
-          · Civic Intelligence Engine · 18th Lok Sabha · Built with open data
+        <main style={{ paddingTop: "64px" }}>{children}</main>
+        <footer style={{
+          background: "#080808",
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+          padding: "40px 80px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: "13px",
+          color: "rgba(255,255,255,0.2)",
+        }}>
+          <span>
+            <span style={{ color: "#FF6B00", fontWeight: 700 }}>LokDrishti</span>
+            {" "}· Civic Intelligence Engine
+          </span>
+          <span>18th Lok Sabha · Data: PRS Legislative Research</span>
         </footer>
       </body>
     </html>

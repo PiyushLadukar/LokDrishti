@@ -1,215 +1,321 @@
 import Link from "next/link";
-import { getNationalRankings } from "@/lib/api";
-import MpCard from "@/components/Mpcard";
-import StatCard from "@/components/statecard";
-import { MP } from "@/types";
+import HeroCanvas from "@/components/herocanvas";
+import FeatureCards from "@/components/featurecards";
+import MetricList from "@/components/metriclist";
+
+function AshokaChakraBG() {
+  return (
+    <div style={{
+      position: "absolute", right: "-100px", top: "50%",
+      transform: "translateY(-50%)",
+      opacity: 0.05,
+      animation: "chakra-spin 80s linear infinite",
+      pointerEvents: "none",
+    }}>
+      <svg width="600" height="600" viewBox="0 0 200 200" fill="none">
+        <circle cx="100" cy="100" r="96" stroke="white" strokeWidth="5" />
+        <circle cx="100" cy="100" r="16" fill="white" />
+        {Array.from({ length: 24 }).map((_, i) => {
+          const rad = (i * 360 / 24) * Math.PI / 180;
+          return (
+            <line key={i}
+              x1={100 + 16 * Math.cos(rad)} y1={100 + 16 * Math.sin(rad)}
+              x2={100 + 70 * Math.cos(rad)} y2={100 + 70 * Math.sin(rad)}
+              stroke="white" strokeWidth="2"
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
 
 export default async function Home() {
-  let top10: MP[] = [];
-  try {
-    const data = await getNationalRankings(10);
-    top10 = data.data || [];
-  } catch {
-    top10 = [];
-  }
-
   return (
-    <div style={{ fontFamily: "var(--font-body)" }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#0D0D0D", color: "white" }}>
 
-      {/* ── HERO ──────────────────────────────────── */}
+      {/* ══════════════════════════════════════
+          HERO
+      ══════════════════════════════════════ */}
       <section style={{
-        background: "linear-gradient(160deg, var(--navy) 0%, var(--navy-mid) 60%, var(--navy-light) 100%)",
-        minHeight: "88vh",
-        display: "flex", alignItems: "center",
+        minHeight: "100vh",
+        display: "flex", flexDirection: "column", justifyContent: "center",
         position: "relative", overflow: "hidden",
+        padding: "120px 80px 80px",
       }}>
-        {/* Watermark Chakra */}
+        <HeroCanvas />
+
+        {/* Vertical side label */}
         <div style={{
-          position: "absolute", right: "-80px", top: "50%",
-          transform: "translateY(-50%)",
-          width: "560px", height: "560px",
-          opacity: 0.06,
-          animation: "chakra-spin 60s linear infinite",
+          position: "absolute", left: "32px", top: "50%",
+          transform: "translateY(-50%) rotate(-90deg)",
+          fontSize: "11px", fontWeight: 600,
+          letterSpacing: "0.25em", color: "rgba(255,255,255,0.2)",
+          textTransform: "uppercase", whiteSpace: "nowrap",
         }}>
-          <svg viewBox="0 0 200 200" fill="none" width="100%" height="100%">
-            <circle cx="100" cy="100" r="90" stroke="white" strokeWidth="4"/>
-            <circle cx="100" cy="100" r="18" fill="white"/>
-            {Array.from({ length: 24 }).map((_, i) => {
-              const angle = (i * 360) / 24;
-              const rad = (angle * Math.PI) / 180;
-              const x1 = 100 + 18 * Math.cos(rad);
-              const y1 = 100 + 18 * Math.sin(rad);
-              const x2 = 100 + 72 * Math.cos(rad);
-              const y2 = 100 + 72 * Math.sin(rad);
-              return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="white" strokeWidth="3"/>;
-            })}
-          </svg>
+          18th Lok Sabha · 2024–2029
         </div>
 
-        <div className="container" style={{ position: "relative", zIndex: 1 }}>
-          {/* Tag */}
-          <div className="animate-fade-up" style={{
-            display: "inline-flex", alignItems: "center", gap: "8px",
-            background: "rgba(255,107,0,0.15)",
-            border: "1px solid rgba(255,107,0,0.3)",
-            borderRadius: "100px",
-            padding: "6px 16px",
-            marginBottom: "28px",
-          }}>
-            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--saffron)" }}/>
-            <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.8)", fontWeight: 500 }}>
-              18th Lok Sabha · 544 MPs Analysed
+        {/* Content */}
+        <div style={{ position: "relative", zIndex: 2, maxWidth: "900px" }}>
+
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "36px" }}>
+            <div style={{
+              width: "8px", height: "8px", borderRadius: "50%",
+              background: "#FF6B00",
+              boxShadow: "0 0 12px rgba(255,107,0,0.8)",
+              animation: "pulse 2s ease-in-out infinite",
+            }} />
+            <span style={{
+              fontSize: "12px", fontWeight: 600,
+              color: "rgba(255,255,255,0.5)",
+              textTransform: "uppercase", letterSpacing: "0.15em",
+            }}>
+              Civic Intelligence Engine
             </span>
           </div>
 
-          {/* Headline */}
-          <h1
-            className="animate-fade-up delay-100"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(40px, 6vw, 72px)",
-              color: "white",
-              lineHeight: 1.1,
-              maxWidth: "720px",
-              marginBottom: "24px",
-              opacity: 0,
-            }}
-          >
-            नागरिकों की{" "}
-            <span style={{ color: "var(--saffron)" }}>दृष्टि</span>
-            <br />
-            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.65em", fontWeight: 300 }}>
-              Civic Intelligence for India
+          <h1 style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: "clamp(56px, 8vw, 110px)",
+            lineHeight: 0.95, letterSpacing: "-2px",
+            fontWeight: 700, marginBottom: "0", color: "white",
+          }}>
+            <span style={{ display: "block" }}>Every Vote.</span>
+            <span style={{ display: "block" }}>
+              Every{" "}
+              <span style={{ color: "transparent", WebkitTextStroke: "2px #FF6B00", fontStyle: "italic" }}>
+                Question.
+              </span>
             </span>
+            <span style={{ display: "block" }}>Every MP.</span>
           </h1>
 
-          <p
-            className="animate-fade-up delay-200"
-            style={{
-              fontSize: "18px", color: "rgba(255,255,255,0.65)",
-              maxWidth: "520px", lineHeight: 1.7, marginBottom: "40px", opacity: 0,
-            }}
-          >
-            LokDrishti is a data-driven performance engine for India's Members of Parliament.
-            Track attendance, debates, questions, and civic engagement — all in one place.
+          <div style={{
+            width: "80px", height: "2px",
+            background: "linear-gradient(90deg, #FF6B00, transparent)",
+            margin: "40px 0",
+          }} />
+
+          <p style={{
+            fontSize: "18px", color: "rgba(255,255,255,0.5)",
+            lineHeight: 1.7, maxWidth: "520px", marginBottom: "48px",
+          }}>
+            LokDrishti tracks the real parliamentary performance of all 544 MPs
+            in India's 18th Lok Sabha — built on open legislative data.
           </p>
 
-          {/* CTAs */}
-          <div
-            className="animate-fade-up delay-300"
-            style={{ display: "flex", gap: "16px", flexWrap: "wrap", opacity: 0 }}
-          >
+          <div style={{ display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
             <Link href="/rankings" style={{
-              padding: "14px 28px",
-              background: "var(--saffron)",
-              color: "white",
-              borderRadius: "var(--radius-sm)",
-              textDecoration: "none",
-              fontWeight: 700, fontSize: "15px",
-              boxShadow: "var(--shadow-saffron)",
+              padding: "14px 32px", background: "#FF6B00", color: "white",
+              borderRadius: "4px", textDecoration: "none",
+              fontWeight: 700, fontSize: "14px",
+              letterSpacing: "0.05em", textTransform: "uppercase",
+              boxShadow: "0 0 32px rgba(255,107,0,0.4)",
             }}>
-              Explore Rankings →
+              Explore Rankings
             </Link>
             <Link href="/analytics" style={{
-              padding: "14px 28px",
-              background: "rgba(255,255,255,0.08)",
-              color: "white",
-              border: "1px solid rgba(255,255,255,0.2)",
-              borderRadius: "var(--radius-sm)",
-              textDecoration: "none",
-              fontWeight: 500, fontSize: "15px",
+              padding: "14px 32px", background: "transparent",
+              color: "rgba(255,255,255,0.7)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: "4px", textDecoration: "none",
+              fontWeight: 500, fontSize: "14px",
+              letterSpacing: "0.05em", textTransform: "uppercase",
             }}>
               View Analytics
             </Link>
           </div>
         </div>
-      </section>
 
-      {/* ── STATS BAR ──────────────────────────────── */}
-      <section style={{ background: "var(--cream-dark)", borderBottom: "1px solid var(--border)" }}>
-        <div className="container" style={{
-          display: "flex", gap: "16px", flexWrap: "wrap",
-          justifyContent: "center", padding: "40px 24px",
+        {/* Bottom stats bar */}
+        <div style={{
+          position: "absolute", bottom: 0, left: 0, right: 0,
+          display: "flex", borderTop: "1px solid rgba(255,255,255,0.06)", zIndex: 2,
         }}>
-          <StatCard value="544"  label="MPs Tracked"      accent delay={0}   />
-          <StatCard value="28"   label="States & UTs"     delay={100} />
-          <StatCard value="40+"  label="Political Parties" delay={200} />
-          <StatCard value="11"   label="Metrics Computed" delay={300} />
-        </div>
-      </section>
-
-      {/* ── TOP 10 ──────────────────────────────────── */}
-      <section className="section">
-        <div className="container">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "40px" }}>
-            <div>
-              <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--saffron)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
-                National Rankings
-              </p>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: "36px", color: "var(--navy)" }}>
-                Top 10 Performers
-              </h2>
-            </div>
-            <Link href="/rankings" style={{
-              color: "var(--saffron)", fontWeight: 600, fontSize: "14px",
-              textDecoration: "none", display: "flex", alignItems: "center", gap: "4px",
+          {[
+            { n: "544", label: "Members of Parliament" },
+            { n: "28",  label: "States & Union Territories" },
+            { n: "40+", label: "Political Parties" },
+            { n: "11",  label: "Performance Metrics" },
+          ].map((s, i) => (
+            <div key={i} style={{
+              flex: 1, padding: "24px 32px",
+              borderRight: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none",
             }}>
-              View all 544 →
-            </Link>
-          </div>
-
-          {top10.length === 0 ? (
-            <div style={{
-              textAlign: "center", padding: "60px",
-              color: "var(--text-muted)", fontSize: "15px",
-              background: "white", borderRadius: "var(--radius-md)", border: "1px solid var(--border)",
-            }}>
-              ⚠ Could not load data. Make sure your Flask API is running at{" "}
-              <code style={{ color: "var(--saffron)" }}>http://127.0.0.1:5000</code>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: "12px" }}>
-              {top10.map((mp, i) => (
-                <MpCard key={mp.name} mp={mp} rank={i + 1} delay={i * 60} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ───────────────────────────── */}
-      <section className="section" style={{ background: "var(--navy)" }}>
-        <div className="container">
-          <div style={{ textAlign: "center", marginBottom: "56px" }}>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--saffron)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
-              The Intelligence Layer
-            </p>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: "36px", color: "white" }}>
-              How LCI Score Works
-            </h2>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
-            {[
-              { icon: "📋", title: "Attendance", weight: "40%", desc: "Parliamentary session attendance as a percentage of total sittings" },
-              { icon: "🎙", title: "Debates",    weight: "30%", desc: "Number of debates participated in during the session" },
-              { icon: "❓", title: "Questions",  weight: "30%", desc: "Number of questions raised on the floor of the house" },
-            ].map((item, i) => (
-              <div key={i} className="animate-fade-up" style={{
-                animationDelay: `${i * 100}ms`, opacity: 0,
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "var(--radius-md)", padding: "28px",
+              <div style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: "44px", fontWeight: 700,
+                color: "white", lineHeight: 1, marginBottom: "4px",
               }}>
-                <div style={{ fontSize: "32px", marginBottom: "12px" }}>{item.icon}</div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                  <span style={{ color: "white", fontWeight: 600, fontSize: "16px" }}>{item.title}</span>
-                  <span style={{ color: "var(--saffron)", fontWeight: 700, fontSize: "18px" }}>{item.weight}</span>
-                </div>
-                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: "14px", lineHeight: 1.6 }}>{item.desc}</p>
+                {s.n}
               </div>
-            ))}
+              <div style={{
+                fontSize: "11px", color: "rgba(255,255,255,0.35)",
+                fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.1em",
+              }}>
+                {s.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          TICKER
+      ══════════════════════════════════════ */}
+      <div style={{
+        background: "#FF6B00", padding: "12px 0",
+        overflow: "hidden", whiteSpace: "nowrap",
+      }}>
+        <div style={{
+          display: "inline-block",
+          animation: "ticker 30s linear infinite",
+          fontSize: "12px", fontWeight: 700,
+          letterSpacing: "0.15em", textTransform: "uppercase", color: "white",
+        }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <span key={i} style={{ marginRight: "64px" }}>
+              544 MPs Analysed &nbsp;·&nbsp; 18th Lok Sabha &nbsp;·&nbsp;
+              Attendance · Debates · Questions &nbsp;·&nbsp;
+              Civic Data for Every Indian &nbsp;·&nbsp;
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════
+          FEATURE CARDS
+      ══════════════════════════════════════ */}
+      <section style={{ padding: "120px 80px", background: "#0D0D0D" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "64px" }}>
+            <div style={{ width: "40px", height: "1px", background: "#FF6B00" }} />
+            <span style={{
+              fontSize: "11px", fontWeight: 700,
+              color: "#FF6B00", textTransform: "uppercase", letterSpacing: "0.2em",
+            }}>
+              What LokDrishti Measures
+            </span>
           </div>
+          <FeatureCards />
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          METRICS SECTION
+      ══════════════════════════════════════ */}
+      <section style={{
+        padding: "120px 80px", background: "#111111",
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        position: "relative", overflow: "hidden",
+      }}>
+        <AshokaChakraBG />
+
+        <div style={{ maxWidth: "1200px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <div style={{
+            display: "grid", gridTemplateColumns: "1fr 1fr",
+            gap: "80px", alignItems: "center",
+          }}>
+            {/* Left */}
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
+                <div style={{ width: "40px", height: "1px", background: "#FF6B00" }} />
+                <span style={{
+                  fontSize: "11px", fontWeight: 700,
+                  color: "#FF6B00", textTransform: "uppercase", letterSpacing: "0.2em",
+                }}>
+                  The Metrics
+                </span>
+              </div>
+              <h2 style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: "clamp(40px, 4vw, 64px)",
+                fontWeight: 700, color: "white",
+                lineHeight: 1.05, letterSpacing: "-1px", marginBottom: "24px",
+              }}>
+                Performance measured.<br />
+                <span style={{ color: "#FF6B00", fontStyle: "italic" }}>
+                  Inequality detected.
+                </span>
+              </h2>
+              <p style={{
+                fontSize: "16px", color: "rgba(255,255,255,0.45)",
+                lineHeight: 1.8, marginBottom: "40px", maxWidth: "420px",
+              }}>
+                Beyond simple rankings — LokDrishti computes State Strength,
+                Party Dominance, and a Representation Imbalance Detector
+                to reveal patterns invisible in raw data.
+              </p>
+              <Link href="/analytics" style={{
+                display: "inline-flex", alignItems: "center", gap: "10px",
+                color: "#FF6B00", fontWeight: 600, fontSize: "14px",
+                textDecoration: "none", textTransform: "uppercase", letterSpacing: "0.1em",
+              }}>
+                Explore Analytics <span style={{ fontSize: "18px" }}>→</span>
+              </Link>
+            </div>
+
+            {/* Right — client component handles hover */}
+            <MetricList />
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          CTA
+      ══════════════════════════════════════ */}
+      <section style={{
+        padding: "140px 80px", background: "#0D0D0D",
+        textAlign: "center", position: "relative", overflow: "hidden",
+      }}>
+        {/* Ghost INDIA text */}
+        <div style={{
+          position: "absolute", top: "50%", left: "50%",
+          transform: "translate(-50%, -50%)",
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: "clamp(100px, 20vw, 260px)",
+          fontWeight: 900, color: "transparent",
+          WebkitTextStroke: "1px rgba(255,255,255,0.03)",
+          whiteSpace: "nowrap", pointerEvents: "none",
+          userSelect: "none", lineHeight: 1,
+        }}>
+          INDIA
+        </div>
+
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <p style={{
+            fontSize: "12px", fontWeight: 700, color: "#FF6B00",
+            textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "24px",
+          }}>
+            Your Democracy. Your Data.
+          </p>
+          <h2 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "clamp(40px, 6vw, 80px)",
+            fontWeight: 700, color: "white",
+            lineHeight: 1.0, letterSpacing: "-1.5px", marginBottom: "32px",
+          }}>
+            Hold Parliament<br />
+            <span style={{ color: "#FF6B00", fontStyle: "italic" }}>Accountable.</span>
+          </h2>
+          <p style={{
+            fontSize: "17px", color: "rgba(255,255,255,0.4)",
+            maxWidth: "480px", margin: "0 auto 48px", lineHeight: 1.7,
+          }}>
+            Every citizen deserves to know how their representative performs.
+            No noise. Just data.
+          </p>
+          <Link href="/rankings" style={{
+            padding: "16px 48px", background: "#FF6B00", color: "white",
+            borderRadius: "4px", textDecoration: "none",
+            fontWeight: 700, fontSize: "14px",
+            letterSpacing: "0.1em", textTransform: "uppercase",
+            boxShadow: "0 0 48px rgba(255,107,0,0.4)",
+          }}>
+            Start Exploring →
+          </Link>
         </div>
       </section>
 
