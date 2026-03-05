@@ -8,11 +8,17 @@ export default function Navbar() {
   return (
     <nav style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-      background: "rgba(13,13,13,0.85)",
-      backdropFilter: "blur(20px)",
-      borderBottom: "1px solid rgba(255,255,255,0.06)",
+      background: "rgba(250,250,247,0.92)",
+      backdropFilter: "blur(16px)",
+      borderBottom: "1px solid #E2D9CE",
       fontFamily: "'DM Sans', sans-serif",
     }}>
+      {/* Tricolor line */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: "2px",
+        background: "linear-gradient(90deg, #FF6B00 33%, white 33%, white 66%, #138808 66%)",
+      }} />
+
       <div style={{
         maxWidth: "1400px", margin: "0 auto", padding: "0 80px",
         display: "flex", alignItems: "center",
@@ -20,62 +26,46 @@ export default function Navbar() {
       }}>
 
         {/* Logo */}
-        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "12px" }}>
-          {/* Logo mark — simple L geometric */}
+        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{
-            width: "32px", height: "32px",
-            border: "2px solid #FF6B00",
-            borderRadius: "4px",
+            width: "30px", height: "30px",
+            border: "2px solid #FF6B00", borderRadius: "6px",
             display: "flex", alignItems: "center", justifyContent: "center",
-            position: "relative",
           }}>
-            <div style={{
-              width: "10px", height: "10px",
-              background: "#FF6B00",
-              borderRadius: "2px",
-            }} />
+            <div style={{ width: "9px", height: "9px", background: "#FF6B00", borderRadius: "2px" }} />
           </div>
-          <div>
-            <span style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: "20px", fontWeight: 700,
-              color: "white", letterSpacing: "-0.3px",
-            }}>
-              Lok<span style={{ color: "#FF6B00" }}>Drishti</span>
-            </span>
-          </div>
+          <span style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: "20px", fontWeight: 700,
+            color: "#0A1628", letterSpacing: "-0.3px",
+          }}>
+            Lok<span style={{ color: "#FF6B00" }}>Drishti</span>
+          </span>
         </Link>
 
-        {/* Nav */}
-        <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+        {/* Nav links */}
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           {[
             { href: "/rankings",  label: "Rankings" },
             { href: "/analytics", label: "Analytics" },
           ].map((link) => (
             <Link key={link.href} href={link.href} style={{
-              padding: "8px 18px",
-              borderRadius: "4px",
-              textDecoration: "none",
-              fontSize: "13px", fontWeight: 500,
-              letterSpacing: "0.02em",
-              color: pathname === link.href ? "white" : "rgba(255,255,255,0.45)",
-              background: pathname === link.href ? "rgba(255,255,255,0.08)" : "transparent",
+              padding: "8px 18px", borderRadius: "6px",
+              textDecoration: "none", fontSize: "14px", fontWeight: 500,
+              color: pathname === link.href ? "#FF6B00" : "#4A5568",
+              background: pathname === link.href ? "#FFF0E5" : "transparent",
               transition: "all 0.15s",
             }}>
               {link.label}
             </Link>
           ))}
           <Link href="/rankings" style={{
-            marginLeft: "16px",
-            padding: "9px 22px",
-            borderRadius: "4px",
-            background: "#FF6B00",
-            color: "white",
-            textDecoration: "none",
+            marginLeft: "12px", padding: "9px 22px",
+            borderRadius: "6px", background: "#FF6B00",
+            color: "white", textDecoration: "none",
             fontSize: "13px", fontWeight: 700,
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-            boxShadow: "0 0 20px rgba(255,107,0,0.3)",
+            letterSpacing: "0.04em",
+            boxShadow: "0 2px 12px rgba(255,107,0,0.25)",
           }}>
             Explore →
           </Link>

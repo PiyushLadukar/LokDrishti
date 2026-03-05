@@ -3,10 +3,10 @@
 :root {
   --saffron: #FF6B00;
   --navy: #0A1628;
-  --dark: #0D0D0D;
-  --dark-2: #111111;
-  --dark-3: #161616;
-  --white: #FFFFFF;
+  --cream: #FAFAF7;
+  --cream-dark: #F3EFE8;
+  --border: #E2D9CE;
+  --text-muted: #8A9AB0;
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-body: 'DM Sans', sans-serif;
 }
@@ -16,36 +16,53 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--font-body);
-  background: #0D0D0D;
-  color: white;
+  background: #FAFAF7;
+  color: #0A1628;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
 
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #111; }
-::-webkit-scrollbar-thumb { background: #FF6B00; border-radius: 2px; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #F3EFE8; }
+::-webkit-scrollbar-thumb { background: #FF6B00; border-radius: 3px; }
 
-/* Chakra spin - kept for any use */
-@keyframes chakra-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.75); }
 }
 
-/* Ticker scroll */
 @keyframes ticker {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
 
-/* Pulse dot */
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.6; transform: scale(0.8); }
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Fade up */
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+
+@keyframes rotateChakra {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-rotateChakra {
+  animation: spinSlow 25s linear infinite;
+}
+
+
+@keyframes chakraGlow {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
 }

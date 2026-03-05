@@ -1,22 +1,32 @@
+import Chakra from "./chakra";
+
 export default function Hero() {
   return (
-    <div className="text-center py-16">
+    <section className="flex items-center justify-between px-20 py-24">
 
-      <h1 className="text-5xl font-bold mb-4">
-        LokDrishti
-      </h1>
+      {/* LEFT TEXT */}
 
-      <p className="text-gray-600 text-lg">
-        Know Before You Vote
-      </p>
+      <div className="max-w-xl">
 
-      <div className="mt-8">
-        <input
-          placeholder="Search MP..."
-          className="border rounded p-3 w-80"
-        />
+        <h1 className="text-6xl font-bold text-gray-900 leading-tight">
+          Every Vote.
+          <br />
+          Every <span className="text-orange-600">Question.</span>
+          <br />
+          Every MP.
+        </h1>
+
+        <p className="mt-6 text-lg text-gray-600">
+          LokDrishti tracks the real parliamentary performance
+          of all 543 MPs in India's 18th Lok Sabha.
+        </p>
+
       </div>
 
-    </div>
-  )
+      {/* RIGHT SIDE VISUAL */}
+
+      <Chakra />
+
+    </section>
+  );
 }

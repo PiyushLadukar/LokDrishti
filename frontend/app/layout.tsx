@@ -14,15 +14,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Navbar />
         <main style={{ paddingTop: "64px" }}>{children}</main>
         <footer style={{
-          background: "#080808",
-          borderTop: "1px solid rgba(255,255,255,0.05)",
-          padding: "40px 80px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          background: "#0A1628",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          padding: "32px 80px",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
           fontFamily: "'DM Sans', sans-serif",
-          fontSize: "13px",
-          color: "rgba(255,255,255,0.2)",
+          fontSize: "13px", color: "rgba(255,255,255,0.3)",
+          flexWrap: "wrap", gap: "12px",
         }}>
           <span>
             <span style={{ color: "#FF6B00", fontWeight: 700 }}>LokDrishti</span>

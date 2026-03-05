@@ -11,32 +11,37 @@ const metrics = [
 
 export default function MetricList() {
   return (
-    <div style={{ display: "grid", gap: "2px" }}>
-      {metrics.map((m) => (
+    <div style={{
+      background: "white",
+      borderRadius: "12px",
+      border: "1px solid #E2D9CE",
+      overflow: "hidden",
+      boxShadow: "0 2px 16px rgba(10,22,40,0.06)",
+    }}>
+      {metrics.map((m, i) => (
         <div
           key={m.num}
           style={{
-            display: "flex", alignItems: "center", gap: "20px",
-            padding: "18px 20px",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
-            transition: "background 0.15s",
-            cursor: "default",
+            display: "flex", alignItems: "center", gap: "16px",
+            padding: "16px 20px",
+            borderBottom: i < metrics.length - 1 ? "1px solid #F0E8DF" : "none",
+            transition: "background 0.15s", cursor: "default",
           }}
-          onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.background = "rgba(255,107,0,0.05)"}
-          onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.background = "transparent"}
+          onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.background = "#FFF8F2"}
+          onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.background = "white"}
         >
           <span style={{
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: "13px", color: "#FF6B00",
-            fontWeight: 700, minWidth: "24px", opacity: 0.6,
+            fontWeight: 700, minWidth: "22px", opacity: 0.7,
           }}>
             {m.num}
           </span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "white", marginBottom: "2px" }}>{m.name}</div>
-            <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)" }}>{m.desc}</div>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "#0A1628", marginBottom: "2px" }}>{m.name}</div>
+            <div style={{ fontSize: "12px", color: "#8A9AB0" }}>{m.desc}</div>
           </div>
-          <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "18px" }}>→</span>
+          <span style={{ color: "#D4C9B8", fontSize: "16px" }}>→</span>
         </div>
       ))}
     </div>
