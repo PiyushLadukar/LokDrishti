@@ -48,7 +48,7 @@ export default function MPProfile() {
   if (error || !mp) return (
     <div style={{ textAlign: "center", padding: "120px", fontFamily: "var(--font-body)" }}>
       <p style={{ color: "var(--danger)", fontSize: "18px", marginBottom: "16px" }}>⚠ {error || "MP not found"}</p>
-      <Link href="/rankings" style={{ color: "var(--saffron)", fontWeight: 600 }}>← Back to Rankings</Link>
+      <Link href="/ranking" style={{ color: "var(--saffron)", fontWeight: 600 }}>← Back to Rankings</Link>
     </div>
   );
 
@@ -61,7 +61,7 @@ export default function MPProfile() {
       {/* Hero */}
       <div style={{ background: "linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%)", padding: "56px 0 48px" }}>
         <div className="container">
-          <Link href="/rankings" style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px", textDecoration: "none", display: "inline-block", marginBottom: "24px" }}>
+          <Link href="/ranking" style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px", textDecoration: "none", display: "inline-block", marginBottom: "24px" }}>
             ← Back to Rankings
           </Link>
           <div style={{ display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>
