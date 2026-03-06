@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { getMPs, getStateLeaderboard, getPartyLeaderboard } from "@/lib/api";
+import { getNationalRankings, getStateLeaderboard, getPartyLeaderboard } from "@/lib/api";
 import MpCard from "@/components/Mpcard";
 import { MP } from "@/types";
 
@@ -30,7 +30,7 @@ export default function RankingsPage() {
         params.set("page_size", "20");
         if (stateFilter) params.set("state", stateFilter);
         if (partyFilter) params.set("party", partyFilter);
-        const data = await getMPs(params.toString());
+        const data = await getNationalRankings(undefined, page, 20);
         setMps(data.data || []);
         setTotalPages(data.total_pages || 1);
       } else if (tab === "state") {

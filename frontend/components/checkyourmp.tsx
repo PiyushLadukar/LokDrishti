@@ -1,4 +1,5 @@
 "use client";
+import { getMPByName } from "@/lib/api";
 import { useState } from "react";
 import Link from "next/link";
 
@@ -43,10 +44,7 @@ export default function CheckYourMP() {
     setMp(null);
     setSearched(true);
     try {
-      const res = await fetch(
-        `http://127.0.0.1:5000/api/mps/${encodeURIComponent(query.trim())}`
-      );
-      const data = await res.json();
+      const data = await getMPByName(query.trim());
       if (data.data) setMp(data.data);
       else setError("MP not found. Try a different spelling.");
     } catch {
