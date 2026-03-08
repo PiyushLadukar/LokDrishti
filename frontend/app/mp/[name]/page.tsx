@@ -1,118 +1,219 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { getNationalRankings } from "@/lib/api";
 
-const getLCI        = (mp: any): number  => mp.LCI_score  ?? 0;
-const getAttendance = (mp: any): number  => mp.attendance ?? 0;
-const getQuestions  = (mp: any): number  => mp.questions  ?? 0;
-const getDebates    = (mp: any): number  => mp.debates    ?? 0;
-const isSilent      = (mp: any): boolean => mp.silent_flag === 1;
+/* ─── Data helpers ─────────────────────────────────────────── */
+const getLCI        = (mp: any) => mp.LCI_score  ?? 0;
+const getAttendance = (mp: any) => mp.attendance ?? 0;
+const getQuestions  = (mp: any) => mp.questions  ?? 0;
+const getDebates    = (mp: any) => mp.debates    ?? 0;
+const isSilent      = (mp: any) => mp.silent_flag === 1;
 
 function getGrade(lci: number) {
-  if (lci >= 0.75) return { g: "A", label: "Exceptional",   color: "#138808", light: "#EDFBEE", dark: "#166534" };
-  if (lci >= 0.5)  return { g: "B", label: "Good",          color: "#FF6B00", light: "#FFF4EC", dark: "#9A3412" };
-  if (lci >= 0.25) return { g: "C", label: "Below Average", color: "#D97706", light: "#FFFBEB", dark: "#92400E" };
-  return              { g: "D", label: "Poor",           color: "#DC2626", light: "#FFF5F5", dark: "#991B1B" };
+  if (lci >= 0.75) return { g:"A", label:"Exceptional",   color:"#00C896", glow:"rgba(0,200,150,0.3)",   ring:"#00C896" };
+  if (lci >= 0.5)  return { g:"B", label:"Good",          color:"#FF6B00", glow:"rgba(255,107,0,0.3)",   ring:"#FF6B00" };
+  if (lci >= 0.25) return { g:"C", label:"Average",       color:"#F59E0B", glow:"rgba(245,158,11,0.3)",  ring:"#F59E0B" };
+  if (lci >= 0.1)  return { g:"D", label:"Below Average", color:"#EF4444", glow:"rgba(239,68,68,0.3)",   ring:"#EF4444" };
+  return                   { g:"F", label:"Poor",          color:"#991B1B", glow:"rgba(153,27,27,0.3)",   ring:"#991B1B" };
 }
 
-function MPPhoto({ name, photoUrl, size = 80 }: { name: string; photoUrl?: string; size?: number }) {
-  const [err, setErr] = useState(false);
-  const initials = (name || "?").split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase();
-  const colors = ["#0057A8","#138808","#FF6B00","#7C3AED","#0891B2","#DC2626"];
-  const color  = colors[initials.charCodeAt(0) % colors.length];
-  if (photoUrl && !err) {
-    return (
-      <div style={{ width: size, height: size, borderRadius: "18px", overflow: "hidden", border: "3px solid rgba(255,255,255,0.15)", flexShrink: 0 }}>
-        <img src={photoUrl} alt={name} onError={() => setErr(true)}
-          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
-      </div>
-    );
+/* ─── Animated Counter ─────────────────────────────────────── */
+function Counter({ to, decimals=0, suffix="" }: { to:number; decimals?:number; suffix?:string }) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    let start = 0;
+    const duration = 1200;
+    const step = 16;
+    const inc = to / (duration / step);
+    const timer = setInterval(() => {
+      start += inc;
+      if (start >= to) { setVal(to); clearInterval(timer); }
+      else setVal(start);
+    }, step);
+    return () => clearInterval(timer);
+  }, [to]);
+  return <>{val.toFixed(decimals)}{suffix}</>;
+}
+
+/* ─── Radar Chart ──────────────────────────────────────────── */
+function RadarChart({ mp, avgAtt, avgQ, avgDeb }: any) {
+  const lci  = getLCI(mp);
+  const att  = getAttendance(mp);
+  const q    = getQuestions(mp);
+  const deb  = getDebates(mp);
+  const eng  = mp.engagement_index ?? 0;
+
+  const maxQ = 350, maxDeb = 250, maxEng = 600;
+
+  const metrics = [
+    { label:"Attendance",  mp: att,       avg: avgAtt,      max: 1     },
+    { label:"Questions",   mp: q/maxQ,    avg: avgQ/maxQ,   max: 1     },
+    { label:"Debates",     mp: deb/maxDeb,avg: avgDeb/maxDeb,max: 1    },
+    { label:"LCI Score",   mp: lci,       avg: 0.12,        max: 1     },
+    { label:"Engagement",  mp: eng/maxEng,avg: 0.25,        max: 1     },
+  ];
+
+  const cx = 160, cy = 160, r = 110;
+  const n = metrics.length;
+  const angleStep = (2 * Math.PI) / n;
+  const startAngle = -Math.PI / 2;
+
+  function polar(val: number, i: number) {
+    const angle = startAngle + i * angleStep;
+    return [cx + val * r * Math.cos(angle), cy + val * r * Math.sin(angle)];
   }
+
+  const mpPoints    = metrics.map((m, i) => polar(Math.min(m.mp, 1), i));
+  const avgPoints   = metrics.map((m, i) => polar(Math.min(m.avg, 1), i));
+  const gridLevels  = [0.25, 0.5, 0.75, 1.0];
+
+  const toPath = (pts: number[][]) => pts.map((p,i) => `${i===0?"M":"L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ") + "Z";
+
   return (
-    <div style={{ width: size, height: size, borderRadius: "18px", flexShrink: 0,
-      background: `${color}25`, border: `3px solid ${color}40`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontFamily: "'Cormorant Garamond',serif", fontSize: size * 0.35,
-      fontWeight: 700, color }}>
-      {initials}
+    <svg viewBox="0 0 320 320" style={{ width:"100%", maxWidth:"320px" }}>
+      <defs>
+        <radialGradient id="mpGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#FF6B00" stopOpacity="0.4"/>
+          <stop offset="100%" stopColor="#FF6B00" stopOpacity="0.05"/>
+        </radialGradient>
+      </defs>
+      {/* Grid */}
+      {gridLevels.map(level => (
+        <polygon key={level}
+          points={metrics.map((_,i) => polar(level,i).join(",")).join(" ")}
+          fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1"/>
+      ))}
+      {/* Spokes */}
+      {metrics.map((_,i) => {
+        const [x,y] = polar(1,i);
+        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(255,255,255,0.07)" strokeWidth="1"/>;
+      })}
+      {/* Avg area */}
+      <path d={toPath(avgPoints)} fill="rgba(96,165,250,0.08)" stroke="rgba(96,165,250,0.3)" strokeWidth="1.5" strokeDasharray="4,3"/>
+      {/* MP area */}
+      <path d={toPath(mpPoints)} fill="url(#mpGrad)" stroke="#FF6B00" strokeWidth="2"/>
+      {/* MP dots */}
+      {mpPoints.map(([x,y],i) => (
+        <circle key={i} cx={x} cy={y} r="4" fill="#FF6B00" stroke="#0A1628" strokeWidth="2"/>
+      ))}
+      {/* Labels */}
+      {metrics.map((m,i) => {
+        const [x,y] = polar(1.22, i);
+        return (
+          <text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="middle"
+            fill="rgba(255,255,255,0.5)" fontSize="10" fontFamily="'DM Sans',sans-serif">
+            {m.label}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* ─── Animated Bar ─────────────────────────────────────────── */
+function AnimBar({ value, max, color, delay=0 }: { value:number; max:number; color:string; delay?:number }) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setWidth(Math.min((value/(max||1))*100, 100)), delay + 100);
+    return () => clearTimeout(t);
+  }, [value, max, delay]);
+  return (
+    <div style={{ height:"6px", background:"rgba(255,255,255,0.06)", borderRadius:"3px", overflow:"hidden" }}>
+      <div style={{ height:"100%", width:`${width}%`, background:color, borderRadius:"3px",
+        transition:"width 1s cubic-bezier(0.4,0,0.2,1)", boxShadow:`0 0 8px ${color}60` }}/>
     </div>
   );
 }
 
-function StatBar({ label, value, max, color, display, note }: {
-  label: string; value: number; max: number; color: string; display: string; note?: string;
-}) {
-  const pct = Math.min((value / (max || 1)) * 100, 100);
+/* ─── MP Photo ─────────────────────────────────────────────── */
+function MPPhoto({ name, photoUrl, size=120, glowColor }: { name:string; photoUrl?:string; size?:number; glowColor:string }) {
+  const [err, setErr] = useState(false);
+  const [hov, setHov] = useState(false);
+  const initials = (name||"?").split(" ").map((w:string)=>w[0]).slice(0,2).join("").toUpperCase();
+
   return (
-    <div style={{ marginBottom: "18px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "6px" }}>
-        <div>
-          <span style={{ fontSize: "12px", color: "#6B7280", fontWeight: 600 }}>{label}</span>
-          {note && <span style={{ fontSize: "10px", color: "#9CA3AF", marginLeft: "6px" }}>{note}</span>}
-        </div>
-        <span style={{ fontSize: "16px", fontWeight: 800, color, fontFamily: "'Cormorant Garamond',serif" }}>{display}</span>
-      </div>
-      <div style={{ height: "8px", background: "#F3EFE8", borderRadius: "4px", overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg,${color}bb,${color})`,
-          borderRadius: "4px", transition: "width 1s ease" }} />
+    <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+      style={{ position:"relative", width:size, height:size, flexShrink:0,
+        transition:"transform 0.3s ease", transform:hov?"scale(1.05)":"scale(1)" }}>
+      {/* Animated glow ring */}
+      <div style={{ position:"absolute", inset:"-6px", borderRadius:"50%",
+        background:`conic-gradient(${glowColor}, transparent, ${glowColor})`,
+        opacity: hov ? 1 : 0.6,
+        animation:"spin 3s linear infinite",
+        transition:"opacity 0.3s" }}/>
+      <div style={{ position:"absolute", inset:"-3px", borderRadius:"50%", background:"#0A1628" }}/>
+      {/* Photo */}
+      <div style={{ position:"relative", width:size, height:size, borderRadius:"50%", overflow:"hidden",
+        border:`2px solid ${glowColor}40`, boxShadow:`0 0 ${hov?40:20}px ${glowColor}60`,
+        transition:"box-shadow 0.3s" }}>
+        {photoUrl && !err ? (
+          <img src={photoUrl} alt={name} onError={()=>setErr(true)}
+            referrerPolicy="no-referrer"
+            style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"top center" }}/>
+        ) : (
+          <div style={{ width:"100%", height:"100%", background:`linear-gradient(135deg,${glowColor}30,${glowColor}10)`,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontFamily:"'Cormorant Garamond',serif", fontSize:size*0.32, fontWeight:700, color:glowColor }}>
+            {initials}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
+/* ─── Main Page ────────────────────────────────────────────── */
 export default function MPProfilePage() {
   const params = useParams();
   const name   = decodeURIComponent((params?.name as string) ?? "");
-  const [mp, setMp]         = useState<any>(null);
-  const [photo, setPhoto]   = useState<string | null>(null);
+  const [mp,      setMp]      = useState<any>(null);
+  const [photo,   setPhoto]   = useState<string|null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState(false);
-  const [avgAtt, setAvgAtt] = useState(0);
-  const [avgQ,   setAvgQ]   = useState(0);
-  const [avgDeb, setAvgDeb] = useState(0);
+  const [error,   setError]   = useState(false);
+  const [avgAtt,  setAvgAtt]  = useState(0.76);
+  const [avgQ,    setAvgQ]    = useState(78);
+  const [avgDeb,  setAvgDeb]  = useState(15);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (!name) return;
     (async () => {
       try {
-        // Fetch all MPs and find by name — getMPByName might not return full data
         const first = await getNationalRankings(undefined, 1, 100);
         const total = first.total || 544;
-        const pages = Math.ceil(total / 100);
-        let all = [...(first.data || [])];
-        for (let p = 2; p <= pages; p++) {
+        let all = [...(first.data||[])];
+        for (let p=2; p<=Math.ceil(total/100); p++) {
           const r = await getNationalRankings(undefined, p, 100);
-          all = [...all, ...(r.data || [])];
+          all = [...all, ...(r.data||[])];
         }
-        const found = all.find((m: any) => m.name === name);
-        if (found) setMp(found);
-        else setError(true);
-
-        // Compute averages
-        setAvgAtt(all.reduce((s: number, m: any) => s + getAttendance(m), 0) / all.length);
-        setAvgQ(all.reduce((s: number, m: any) => s + getQuestions(m), 0) / all.length);
-        setAvgDeb(all.reduce((s: number, m: any) => s + getDebates(m), 0) / all.length);
+        const found = all.find((m:any) => m.name === name);
+        if (found) setMp(found); else setError(true);
+        if (all.length) {
+          setAvgAtt(all.reduce((s:number,m:any)=>s+(m.attendance??0),0)/all.length);
+          setAvgQ(all.reduce((s:number,m:any)=>s+(m.questions??0),0)/all.length);
+          setAvgDeb(all.reduce((s:number,m:any)=>s+(m.debates??0),0)/all.length);
+        }
       } catch { setError(true); }
       setLoading(false);
+      setTimeout(() => setVisible(true), 100);
     })();
-    // Load photo
-    fetch("/mp_photos.json").then(r => r.json()).then(d => setPhoto(d[name] || null)).catch(() => {});
+    fetch("/mp_photos.json").then(r=>r.json()).then(d=>setPhoto(d[name]||null)).catch(()=>{});
   }, [name]);
 
   if (loading) return (
-    <div style={{ minHeight: "100vh", background: "#F7F4EF", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "14px", fontFamily: "'DM Sans',sans-serif" }}>
-      <div style={{ width: "32px", height: "32px", border: "3px solid rgba(255,107,0,0.15)", borderTop: "3px solid #FF6B00", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-      <div style={{ fontSize: "12px", color: "#9CA3AF" }}>Loading MP profile…</div>
+    <div style={{ minHeight:"100vh", background:"#0A1628", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:"16px" }}>
+      <div style={{ width:"40px", height:"40px", border:"3px solid rgba(255,107,0,0.2)", borderTop:"3px solid #FF6B00", borderRadius:"50%", animation:"spin 0.8s linear infinite" }}/>
+      <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.3)", fontFamily:"'DM Sans',sans-serif" }}>Loading profile…</div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
   if (error || !mp) return (
-    <div style={{ minHeight: "100vh", background: "#F7F4EF", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "12px", fontFamily: "'DM Sans',sans-serif" }}>
-      <div style={{ fontSize: "13px", color: "#9CA3AF" }}>MP not found. Flask may not be running.</div>
-      <Link href="/mp" style={{ fontSize: "12px", color: "#FF6B00", textDecoration: "none", fontWeight: 700 }}>← Back to All MPs</Link>
+    <div style={{ minHeight:"100vh", background:"#0A1628", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:"12px", fontFamily:"'DM Sans',sans-serif" }}>
+      <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)" }}>MP not found.</div>
+      <Link href="/mp" style={{ fontSize:"12px", color:"#FF6B00", textDecoration:"none", fontWeight:700 }}>← Back to All MPs</Link>
     </div>
   );
 
@@ -121,215 +222,399 @@ export default function MPProfilePage() {
   const attPct = att * 100;
   const q      = getQuestions(mp);
   const deb    = getDebates(mp);
+  const eng    = mp.engagement_index ?? 0;
   const silent = isSilent(mp);
   const grade  = getGrade(lci);
-  const attColor = attPct >= 75 ? "#138808" : attPct >= 50 ? "#FF6B00" : "#DC2626";
-  const initials = name.split(" ").map((w:string) => w[0]).slice(0,2).join("").toUpperCase();
+  const attColor = attPct>=75?"#00C896":attPct>=50?"#F59E0B":"#EF4444";
+  const initials = name.split(" ").map((w:string)=>w[0]).slice(0,2).join("").toUpperCase();
+
+  const diffAtt  = ((attPct - avgAtt*100) / (avgAtt*100||1)*100);
+  const diffQ    = ((q - avgQ) / (avgQ||1)*100);
+  const diffDeb  = ((deb - avgDeb) / (avgDeb||1)*100);
+  const diffLCI  = ((lci - 0.12) / 0.12*100);
+
+  const fade = (delay: number): React.CSSProperties => ({
+    opacity: visible ? 1 : 0,
+    transform: visible ? "translateY(0)" : "translateY(20px)",
+    transitionProperty: "opacity, transform",
+    transitionDuration: "0.6s",
+    transitionTimingFunction: "ease",
+    transitionDelay: `${delay}ms`,
+  });
 
   return (
-    <div style={{ minHeight: "100vh", fontFamily: "'DM Sans',sans-serif", background: "#F7F4EF" }}>
+    <div style={{ minHeight:"100vh", fontFamily:"'DM Sans',sans-serif", background:"#080E1A" }}>
 
-      {/* ══ HERO ══ */}
-      <div style={{ background: "#0A1628", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,107,0,0.06) 1px, transparent 1px)", backgroundSize: "22px 22px", pointerEvents: "none" }} />
-        {/* Grade color left bar */}
-        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "5px", background: `linear-gradient(180deg,transparent,${grade.color},transparent)` }} />
+      {/* ══ CINEMATIC HERO ══ */}
+      <div style={{ background:"linear-gradient(160deg, #0A1628 0%, #0F1E3A 50%, #0A1628 100%)", position:"relative", overflow:"hidden", paddingBottom:"0" }}>
+        {/* Animated dot grid */}
+        <div style={{ position:"absolute", inset:0,
+          backgroundImage:"radial-gradient(rgba(255,107,0,0.08) 1px, transparent 1px)",
+          backgroundSize:"28px 28px", pointerEvents:"none" }}/>
+        {/* Radial glow behind photo */}
+        <div style={{ position:"absolute", left:"60px", top:"50%", transform:"translateY(-50%)",
+          width:"300px", height:"300px",
+          background:`radial-gradient(circle, ${grade.glow} 0%, transparent 70%)`,
+          pointerEvents:"none" }}/>
+        {/* Top tricolor line */}
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:"3px",
+          background:"linear-gradient(90deg,#FF6B00 33%,#FAFAF7 33%,#FAFAF7 66%,#138808 66%)" }}/>
         {/* Ghost initials */}
-        <div style={{ position: "absolute", right: "40px", top: "50%", transform: "translateY(-50%)", fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(100px,14vw,180px)", fontWeight: 900, color: "transparent", WebkitTextStroke: "1px rgba(255,255,255,0.04)", userSelect: "none", letterSpacing: "-4px", pointerEvents: "none" }}>{initials}</div>
+        <div style={{ position:"absolute", right:"-20px", top:"50%", transform:"translateY(-50%)",
+          fontFamily:"'Cormorant Garamond',serif", fontSize:"220px", fontWeight:900,
+          color:"transparent", WebkitTextStroke:"1px rgba(255,255,255,0.03)",
+          userSelect:"none", pointerEvents:"none", letterSpacing:"-8px" }}>{initials}</div>
 
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "36px 40px 40px", position: "relative", zIndex: 1 }}>
-          <Link href="/mp" style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.3)", textDecoration: "none", marginBottom: "24px", textTransform: "uppercase", letterSpacing: "0.12em" }}>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <div style={{ maxWidth:"1280px", margin:"0 auto", padding:"80px 48px 60px" }}>
+          <Link href="/mp" style={{ display:"inline-flex", alignItems:"center", gap:"6px",
+            fontSize:"11px", fontWeight:700, color:"rgba(255,255,255,0.25)", textDecoration:"none",
+            marginBottom:"32px", textTransform:"uppercase", letterSpacing:"0.15em",
+            ...fade(0) }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M8 2L4 6l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
             All MPs
           </Link>
 
-          <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", flexWrap: "wrap" }}>
-            <MPPhoto name={name} photoUrl={photo ?? undefined} size={88} />
-            <div style={{ flex: 1 }}>
-              {/* Name + badges */}
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "8px" }}>
-                <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(28px,4vw,52px)", fontWeight: 700, color: "white", letterSpacing: "-0.5px", lineHeight: 1 }}>
+          <div style={{ display:"flex", gap:"40px", alignItems:"center", flexWrap:"wrap", ...fade(100) }}>
+            {/* Photo */}
+            <MPPhoto name={name} photoUrl={photo??undefined} size={120} glowColor={grade.ring}/>
+
+            {/* Name + meta */}
+            <div style={{ flex:1, minWidth:"280px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"12px", flexWrap:"wrap", marginBottom:"10px" }}>
+                <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:"clamp(32px,4.5vw,56px)",
+                  fontWeight:700, color:"white", letterSpacing:"-1px", lineHeight:1, margin:0 }}>
                   {mp.name}
                 </h1>
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  <span style={{ padding: "4px 12px", background: `${grade.color}25`, border: `1px solid ${grade.color}40`, borderRadius: "100px", fontSize: "12px", fontWeight: 800, color: grade.color }}>
-                    Grade {grade.g} — {grade.label}
-                  </span>
-                  {silent && <span style={{ padding: "4px 10px", background: "#FEE2E2", border: "1px solid #FCA5A5", borderRadius: "100px", fontSize: "10px", fontWeight: 800, color: "#DC2626" }}>SILENT MP</span>}
+                <div style={{ padding:"5px 14px", background:`${grade.color}15`,
+                  border:`1px solid ${grade.color}40`, borderRadius:"100px",
+                  fontSize:"12px", fontWeight:800, color:grade.color }}>
+                  Grade {grade.g} — {grade.label}
                 </div>
+                {silent && (
+                  <div style={{ padding:"5px 12px", background:"rgba(239,68,68,0.1)",
+                    border:"1px solid rgba(239,68,68,0.3)", borderRadius:"100px",
+                    fontSize:"11px", fontWeight:800, color:"#EF4444" }}>⚠ SILENT MP</div>
+                )}
               </div>
 
-              {/* Meta */}
-              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "20px" }}>
-                {[
-                  { icon: "◉", v: mp.constituency },
-                  { icon: "▲", v: mp.state },
-                  { icon: "◈", v: mp.party },
-                ].filter(x => x.v).map(x => (
-                  <div key={x.v} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                    <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.2)" }}>{x.icon}</span>
-                    <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{x.v}</span>
-                  </div>
+              <div style={{ display:"flex", gap:"6px", alignItems:"center", flexWrap:"wrap", marginBottom:"24px" }}>
+                {[mp.constituency, mp.state, mp.party].filter(Boolean).map((v,i) => (
+                  <span key={i} style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:500 }}>
+                    {i>0 && <span style={{ marginRight:"6px", color:"rgba(255,255,255,0.15)" }}>•</span>}
+                    {v}
+                  </span>
                 ))}
               </div>
 
               {/* Rank pills */}
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <div style={{ display:"flex", gap:"8px", flexWrap:"wrap" }}>
                 {[
-                  { l: "National Rank", v: `#${Math.round(mp.national_rank ?? 0)}`, c: "#FF6B00" },
-                  { l: "State Rank",    v: `#${Math.round(mp.state_rank ?? 0)}`,    c: "#60A5FA" },
-                  { l: "Party Rank",    v: `#${Math.round(mp.party_rank ?? 0)}`,    c: "#34D399" },
-                  { l: "Percentile",    v: `${(mp.percentile ?? 0).toFixed(1)}th`,  c: "#A78BFA" },
-                ].map(pill => (
-                  <div key={pill.l} style={{ padding: "6px 14px", background: "rgba(255,255,255,0.05)", border: `1px solid ${pill.c}20`, borderRadius: "100px", display: "flex", gap: "7px", alignItems: "center" }}>
-                    <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>{pill.l}</span>
-                    <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "17px", fontWeight: 700, color: pill.c }}>{pill.v}</span>
+                  { icon:"🏆", l:"National Rank", v:`#${Math.round(mp.national_rank??0)}`, c:"#FF6B00" },
+                  { icon:"📍", l:"State Rank",    v:`#${Math.round(mp.state_rank??0)}`,    c:"#60A5FA" },
+                  { icon:"🏛", l:"Party Rank",    v:`#${Math.round(mp.party_rank??0)}`,    c:"#34D399" },
+                  { icon:"📊", l:"Percentile",    v:`${(mp.percentile??0).toFixed(1)}th`,  c:"#A78BFA" },
+                ].map((pill,i) => (
+                  <div key={i} style={{ padding:"8px 16px",
+                    background:"rgba(255,255,255,0.04)",
+                    border:`1px solid rgba(255,255,255,0.08)`,
+                    borderRadius:"100px", display:"flex", gap:"8px", alignItems:"center",
+                    backdropFilter:"blur(10px)",
+                    ...fade(200 + i*80) }}>
+                    <span style={{ fontSize:"12px" }}>{pill.icon}</span>
+                    <span style={{ fontSize:"9px", color:"rgba(255,255,255,0.3)", fontWeight:700,
+                      textTransform:"uppercase", letterSpacing:"0.1em" }}>{pill.l}</span>
+                    <span style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:"18px",
+                      fontWeight:700, color:pill.c }}>{pill.v}</span>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Grade badge */}
+            <div style={{ textAlign:"center", ...fade(300) }}>
+              <div style={{ width:"120px", height:"120px", borderRadius:"24px",
+                background:`linear-gradient(135deg, ${grade.color}15, ${grade.color}05)`,
+                border:`2px solid ${grade.color}30`,
+                display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                boxShadow:`0 0 40px ${grade.glow}`,
+                position:"relative", overflow:"hidden" }}>
+                <div style={{ position:"absolute", inset:0, background:`radial-gradient(circle at 30% 30%, ${grade.color}10, transparent)` }}/>
+                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:"64px", fontWeight:900,
+                  color:grade.color, lineHeight:1 }}>{grade.g}</div>
+                <div style={{ fontSize:"10px", fontWeight:700, color:`${grade.color}aa`,
+                  textTransform:"uppercase", letterSpacing:"0.1em" }}>{grade.label}</div>
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Bottom separator */}
+        <div style={{ height:"1px", background:"linear-gradient(90deg, transparent, rgba(255,107,0,0.3), transparent)" }}/>
       </div>
 
       {/* ══ BODY ══ */}
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "32px 40px 60px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "20px", alignItems: "start" }}>
+      <div style={{ maxWidth:"1280px", margin:"0 auto", padding:"40px 48px 80px" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 360px", gap:"24px", alignItems:"start" }}>
 
-          {/* LEFT */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* ── LEFT COLUMN ── */}
+          <div style={{ display:"flex", flexDirection:"column", gap:"20px" }}>
 
-            {/* 4 stat cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            {/* 4 Metric Cards */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:"14px", ...fade(400) }}>
               {[
-                { l: "LCI Score",  v: lci.toFixed(4),          c: grade.color, sub: "Lok Sabha Civic Index", big: true },
-                { l: "Attendance", v: `${attPct.toFixed(1)}%`, c: attColor,   sub: "Sessions attended" },
-                { l: "Questions",  v: String(q),                c: "#0057A8",  sub: "Total questions raised" },
-                { l: "Debates",    v: String(deb),              c: "#7C3AED",  sub: "Debates participated" },
-              ].map(card => (
-                <div key={card.l} style={{ background: "white", borderRadius: "16px", padding: "20px 22px",
-                  border: "1.5px solid #EDE8E0", borderTop: `4px solid ${card.c}`,
-                  boxShadow: "0 1px 4px rgba(10,22,40,0.05)" }}>
-                  <div style={{ fontSize: "10px", fontWeight: 700, color: card.c, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "6px" }}>{card.l}</div>
-                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: card.big ? "36px" : "32px", fontWeight: 700, color: "#111827", lineHeight: 1 }}>{card.v}</div>
-                  <div style={{ fontSize: "11px", color: "#9CA3AF", marginTop: "4px" }}>{card.sub}</div>
+                { icon:"📊", l:"LCI Score",  v:lci,    fmt:(x:number)=>x.toFixed(4), c:grade.color, sub:"Lok Sabha Civic Index",    max:1,   pct:lci*100 },
+                { icon:"📅", l:"Attendance", v:attPct, fmt:(x:number)=>x.toFixed(1)+"%", c:attColor, sub:"Sessions attended",       max:100, pct:attPct  },
+                { icon:"💬", l:"Questions",  v:q,      fmt:(x:number)=>String(Math.round(x)), c:"#60A5FA", sub:"Questions raised",  max:350, pct:(q/350)*100 },
+                { icon:"🎤", l:"Debates",    v:deb,    fmt:(x:number)=>String(Math.round(x)), c:"#A78BFA", sub:"Debates participated",max:250, pct:(deb/250)*100 },
+              ].map((card,i) => (
+                <div key={i} style={{ background:"#0F1A2E", borderRadius:"16px",
+                  padding:"22px 24px", border:`1px solid rgba(255,255,255,0.06)`,
+                  borderTop:`3px solid ${card.c}`,
+                  boxShadow:`0 4px 24px rgba(0,0,0,0.3)`,
+                  ...fade(400 + i*60) }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"12px" }}>
+                    <div>
+                      <div style={{ fontSize:"10px", fontWeight:700, color:"rgba(255,255,255,0.3)",
+                        textTransform:"uppercase", letterSpacing:"0.14em", marginBottom:"4px" }}>
+                        {card.icon} {card.l}
+                      </div>
+                      <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:"36px",
+                        fontWeight:700, color:"white", lineHeight:1 }}>
+                        <Counter to={card.v} decimals={card.l==="LCI Score"?4:card.l==="Attendance"?1:0}
+                          suffix={card.l==="Attendance"?"%":""} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize:"28px", opacity:0.4 }}>{card.icon}</div>
+                  </div>
+                  <AnimBar value={card.pct} max={100} color={card.c} delay={400+i*100}/>
+                  <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.25)", marginTop:"8px" }}>{card.sub}</div>
                 </div>
               ))}
             </div>
 
-            {/* Performance bars vs averages */}
-            <div style={{ background: "white", borderRadius: "16px", padding: "26px 28px", border: "1.5px solid #EDE8E0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "22px" }}>
-                <div style={{ width: "16px", height: "2px", background: "#FF6B00", borderRadius: "1px" }} />
-                <h2 style={{ fontSize: "13px", fontWeight: 700, color: "#111827", textTransform: "uppercase", letterSpacing: "0.12em" }}>Performance vs National Average</h2>
+            {/* Performance vs National Average */}
+            <div style={{ background:"#0F1A2E", borderRadius:"20px", padding:"28px 32px",
+              border:"1px solid rgba(255,255,255,0.06)", ...fade(600) }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"24px" }}>
+                <div style={{ width:"18px", height:"2px", background:"#FF6B00", borderRadius:"1px" }}/>
+                <h2 style={{ fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.5)",
+                  textTransform:"uppercase", letterSpacing:"0.15em", margin:0 }}>
+                  Performance vs National Average
+                </h2>
               </div>
 
-              <StatBar label="Attendance Rate"   value={att}  max={1}   color={attColor}  display={`${attPct.toFixed(1)}%`}  note={`avg ${(avgAtt*100).toFixed(1)}%`} />
-              <StatBar label="Questions Raised"  value={q}    max={300} color="#0057A8"   display={String(q)}                 note={`avg ${avgQ.toFixed(0)}`} />
-              <StatBar label="Debates"           value={deb}  max={200} color="#7C3AED"   display={String(deb)}               note={`avg ${avgDeb.toFixed(0)}`} />
-              <StatBar label="LCI Score"         value={lci}  max={1}   color={grade.color} display={lci.toFixed(4)}          note="out of 1.0" />
-              {mp.engagement_index != null && (
-                <StatBar label="Engagement Index" value={mp.engagement_index} max={600} color="#FF6B00" display={String(mp.engagement_index)} />
-              )}
-
-              {/* Comparison callouts */}
-              <div style={{ display: "flex", gap: "10px", marginTop: "20px", paddingTop: "18px", borderTop: "1px solid #F3EFE8", flexWrap: "wrap" }}>
+              {/* Comparison table */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr auto auto auto", gap:"0", marginBottom:"20px" }}>
+                {["Metric","MP Value","Nat. Avg","Diff"].map(h => (
+                  <div key={h} style={{ fontSize:"9px", fontWeight:700, color:"rgba(255,255,255,0.2)",
+                    textTransform:"uppercase", letterSpacing:"0.1em", padding:"0 0 12px 0",
+                    borderBottom:"1px solid rgba(255,255,255,0.05)" }}>{h}</div>
+                ))}
                 {[
-                  { label: "Attendance", mp: attPct, avg: avgAtt*100, fmt: (v: number) => `${v.toFixed(0)}%` },
-                  { label: "Questions",  mp: q,      avg: avgQ,       fmt: (v: number) => String(Math.round(v)) },
-                  { label: "Debates",    mp: deb,    avg: avgDeb,     fmt: (v: number) => String(Math.round(v)) },
-                ].map(c => {
-                  const diff = ((c.mp - c.avg) / (c.avg || 1)) * 100;
-                  const up   = c.mp >= c.avg;
+                  { l:"Attendance",  mpV:`${attPct.toFixed(1)}%`,  avg:`${(avgAtt*100).toFixed(1)}%`, diff:diffAtt,  color:attColor, val:attPct, max:100 },
+                  { l:"Questions",   mpV:String(q),                 avg:avgQ.toFixed(0),               diff:diffQ,    color:"#60A5FA",val:q,      max:350 },
+                  { l:"Debates",     mpV:String(deb),               avg:avgDeb.toFixed(0),             diff:diffDeb,  color:"#A78BFA",val:deb,    max:250 },
+                  { l:"LCI Score",   mpV:lci.toFixed(4),            avg:"0.1202",                      diff:diffLCI,  color:grade.color,val:lci*100,max:100 },
+                ].map((row,i) => (
+                  <>
+                    <div key={`l${i}`} style={{ padding:"14px 0", borderBottom:"1px solid rgba(255,255,255,0.04)",
+                      fontSize:"13px", color:"rgba(255,255,255,0.6)", fontWeight:500 }}>{row.l}</div>
+                    <div key={`v${i}`} style={{ padding:"14px 12px", borderBottom:"1px solid rgba(255,255,255,0.04)",
+                      fontSize:"14px", fontWeight:700, color:"white", fontFamily:"'Cormorant Garamond',serif" }}>{row.mpV}</div>
+                    <div key={`a${i}`} style={{ padding:"14px 12px", borderBottom:"1px solid rgba(255,255,255,0.04)",
+                      fontSize:"13px", color:"rgba(255,255,255,0.3)" }}>{row.avg}</div>
+                    <div key={`d${i}`} style={{ padding:"14px 0", borderBottom:"1px solid rgba(255,255,255,0.04)",
+                      fontSize:"13px", fontWeight:800,
+                      color:row.diff>=0?"#00C896":"#EF4444" }}>
+                      {row.diff>=0?"+":""}{row.diff.toFixed(0)}%
+                    </div>
+                  </>
+                ))}
+              </div>
+
+              {/* Animated bars */}
+              <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+                {[
+                  { l:"Attendance",  val:attPct, max:100,  avg:avgAtt*100, c:attColor  },
+                  { l:"Questions",   val:q,      max:350,  avg:avgQ,       c:"#60A5FA" },
+                  { l:"Debates",     val:deb,    max:250,  avg:avgDeb,     c:"#A78BFA" },
+                  { l:"LCI Score",   val:lci,    max:1,    avg:0.12,       c:grade.color },
+                ].map((bar,i) => {
+                  const avgPct = Math.min((bar.avg/(bar.max||1))*100, 100);
                   return (
-                    <div key={c.label} style={{ flex: 1, minWidth: "90px", padding: "10px 12px", borderRadius: "10px",
-                      background: up ? "#F0FBF0" : "#FFF5F5", border: `1px solid ${up ? "#BBF7D0" : "#FECACA"}` }}>
-                      <div style={{ fontSize: "9px", fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "3px" }}>{c.label}</div>
-                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "18px", fontWeight: 700, color: up ? "#138808" : "#DC2626", lineHeight: 1 }}>
-                        {up ? "+" : ""}{diff.toFixed(0)}%
+                    <div key={i}>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
+                        <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.35)", fontWeight:600 }}>{bar.l}</span>
+                        <span style={{ fontSize:"12px", fontWeight:700, color:bar.c, fontFamily:"'Cormorant Garamond',serif" }}>
+                          {bar.l==="LCI Score"?bar.val.toFixed(4):bar.l==="Attendance"?`${bar.val.toFixed(1)}%`:Math.round(bar.val)}
+                        </span>
                       </div>
-                      <div style={{ fontSize: "9px", color: "#9CA3AF", marginTop: "2px" }}>{up ? "above" : "below"} avg</div>
+                      <div style={{ position:"relative", height:"6px", background:"rgba(255,255,255,0.05)", borderRadius:"3px" }}>
+                        <AnimBar value={bar.val} max={bar.max} color={bar.c} delay={700+i*100}/>
+                        {/* Avg marker */}
+                        <div style={{ position:"absolute", top:"-4px", left:`${avgPct}%`, width:"2px", height:"14px",
+                          background:"rgba(255,255,255,0.2)", borderRadius:"1px", transform:"translateX(-50%)" }}/>
+                      </div>
                     </div>
                   );
                 })}
               </div>
+
+              {/* Diff callouts */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"10px", marginTop:"20px" }}>
+                {[
+                  { l:"Attendance", diff:diffAtt  },
+                  { l:"Questions",  diff:diffQ    },
+                  { l:"Debates",    diff:diffDeb  },
+                ].map((c,i) => (
+                  <div key={i} style={{ padding:"14px", borderRadius:"12px",
+                    background:c.diff>=0?"rgba(0,200,150,0.06)":"rgba(239,68,68,0.06)",
+                    border:`1px solid ${c.diff>=0?"rgba(0,200,150,0.15)":"rgba(239,68,68,0.15)"}` }}>
+                    <div style={{ fontSize:"9px", fontWeight:700, color:"rgba(255,255,255,0.3)",
+                      textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"4px" }}>{c.l}</div>
+                    <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:"24px", fontWeight:700,
+                      color:c.diff>=0?"#00C896":"#EF4444" }}>
+                      {c.diff>=0?"+":""}{c.diff.toFixed(0)}%
+                    </div>
+                    <div style={{ fontSize:"9px", color:"rgba(255,255,255,0.2)", marginTop:"2px" }}>
+                      {c.diff>=0?"above":"below"} avg
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* AI Insight Box */}
+            <div style={{ background:"linear-gradient(135deg, #0F1A2E, #151F35)",
+              borderRadius:"16px", padding:"24px 28px",
+              border:"1px solid rgba(255,107,0,0.15)",
+              borderLeft:"4px solid #FF6B00",
+              ...fade(800) }}>
+              <div style={{ fontSize:"10px", fontWeight:800, color:"#FF6B00",
+                textTransform:"uppercase", letterSpacing:"0.14em", marginBottom:"10px" }}>
+                💡 Data Insight
+              </div>
+              <p style={{ fontSize:"14px", color:"rgba(255,255,255,0.6)", lineHeight:1.8, margin:0 }}>
+                {silent
+                  ? `${mp.name} has recorded zero questions and zero debate participations — placing them among the least active MPs in the 18th Lok Sabha. This raises serious accountability concerns.`
+                  : `${mp.name} ${diffQ>0?`asks ${diffQ.toFixed(0)}% more questions`:`asks fewer questions`} than the national average${diffDeb>50?` and participates in debates ${diffDeb.toFixed(0)}% more frequently than peers`:""}.${lci>0.5?" Their LCI score places them in the top tier of parliamentary performers.":lci<0.2?" Their overall performance score is below the national average.":""}`
+                }
+              </p>
             </div>
 
             {/* Silent MP warning */}
             {silent && (
-              <div style={{ background: "#FFF5F5", borderRadius: "16px", padding: "22px 26px", border: "1.5px solid #FECACA", borderLeft: "5px solid #DC2626" }}>
-                <div style={{ fontSize: "11px", fontWeight: 800, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: "8px" }}>⚠ Silent MP Flagged</div>
-                <p style={{ fontSize: "14px", color: "#7F1D1D", lineHeight: 1.7 }}>
-                  This MP has recorded <strong>zero questions</strong> and <strong>zero debate participations</strong> in the 18th Lok Sabha. This is a serious accountability concern.
+              <div style={{ background:"rgba(239,68,68,0.06)", borderRadius:"16px", padding:"22px 26px",
+                border:"1.5px solid rgba(239,68,68,0.2)", borderLeft:"5px solid #EF4444", ...fade(900) }}>
+                <div style={{ fontSize:"11px", fontWeight:800, color:"#EF4444",
+                  textTransform:"uppercase", letterSpacing:"0.14em", marginBottom:"8px" }}>⚠ Silent MP Flagged</div>
+                <p style={{ fontSize:"14px", color:"rgba(239,68,68,0.7)", lineHeight:1.7, margin:0 }}>
+                  This MP has recorded <strong style={{color:"#EF4444"}}>zero questions</strong> and <strong style={{color:"#EF4444"}}>zero debate participations</strong> in the 18th Lok Sabha.
                 </p>
               </div>
             )}
           </div>
 
-          {/* RIGHT */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          {/* ── RIGHT COLUMN ── */}
+          <div style={{ display:"flex", flexDirection:"column", gap:"16px" }}>
 
-            {/* Big grade card */}
-            <div style={{ background: grade.light, borderRadius: "18px", padding: "28px", border: `1.5px solid ${grade.color}25`, borderTop: `5px solid ${grade.color}`, textAlign: "center" }}>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "88px", fontWeight: 900, color: grade.color, lineHeight: 1, marginBottom: "6px" }}>{grade.g}</div>
-              <div style={{ fontSize: "15px", fontWeight: 700, color: grade.color, marginBottom: "6px" }}>{grade.label}</div>
-              <div style={{ fontSize: "12px", color: "#6B7280", lineHeight: 1.6 }}>
-                LCI Score: <strong style={{ color: "#111827" }}>{lci.toFixed(4)}</strong>
+            {/* Radar Chart */}
+            <div style={{ background:"#0F1A2E", borderRadius:"20px", padding:"24px",
+              border:"1px solid rgba(255,255,255,0.06)", ...fade(500) }}>
+              <div style={{ fontSize:"10px", fontWeight:700, color:"rgba(255,255,255,0.3)",
+                textTransform:"uppercase", letterSpacing:"0.14em", marginBottom:"16px" }}>
+                Performance Overview
+              </div>
+              <div style={{ display:"flex", justifyContent:"center" }}>
+                <RadarChart mp={mp} avgAtt={avgAtt} avgQ={avgQ} avgDeb={avgDeb}/>
+              </div>
+              <div style={{ display:"flex", gap:"16px", justifyContent:"center", marginTop:"8px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:"5px" }}>
+                  <div style={{ width:"10px", height:"2px", background:"#FF6B00" }}/>
+                  <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.3)" }}>This MP</span>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:"5px" }}>
+                  <div style={{ width:"10px", height:"2px", background:"rgba(96,165,250,0.5)", borderTop:"1px dashed rgba(96,165,250,0.5)" }}/>
+                  <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.3)" }}>National Avg</span>
+                </div>
               </div>
             </div>
 
-            {/* Rankings */}
-            <div style={{ background: "white", borderRadius: "14px", padding: "20px 22px", border: "1.5px solid #EDE8E0" }}>
-              <div style={{ fontSize: "10px", fontWeight: 800, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: "14px" }}>Rankings</div>
+            {/* Rankings Glass Card */}
+            <div style={{ background:"rgba(255,255,255,0.02)", backdropFilter:"blur(20px)",
+              borderRadius:"18px", padding:"22px 24px",
+              border:"1px solid rgba(255,255,255,0.06)",
+              boxShadow:"0 8px 32px rgba(0,0,0,0.3)",
+              ...fade(600) }}>
+              <div style={{ fontSize:"10px", fontWeight:700, color:"rgba(255,255,255,0.25)",
+                textTransform:"uppercase", letterSpacing:"0.14em", marginBottom:"16px" }}>Rankings</div>
               {[
-                { l: "National Rank",  v: `#${Math.round(mp.national_rank ?? 0)}`,  c: "#FF6B00" },
-                { l: "State Rank",     v: `#${Math.round(mp.state_rank ?? 0)}`,     c: "#0057A8" },
-                { l: "Party Rank",     v: `#${Math.round(mp.party_rank ?? 0)}`,     c: "#138808" },
-                { l: "Percentile",     v: `${(mp.percentile ?? 0).toFixed(1)}th`,   c: "#7C3AED" },
-              ].map((r, i, arr) => (
-                <div key={r.l} style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "11px 0", borderBottom: i < arr.length-1 ? "1px solid #F3EFE8" : "none" }}>
-                  <span style={{ fontSize: "12px", color: "#6B7280", fontWeight: 500 }}>{r.l}</span>
-                  <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "22px", fontWeight: 700, color: r.c }}>{r.v}</span>
+                { l:"National Rank", v:`#${Math.round(mp.national_rank??0)}`, c:"#FF6B00" },
+                { l:"State Rank",    v:`#${Math.round(mp.state_rank??0)}`,    c:"#60A5FA" },
+                { l:"Party Rank",    v:`#${Math.round(mp.party_rank??0)}`,    c:"#34D399" },
+                { l:"Percentile",    v:`${(mp.percentile??0).toFixed(1)}th`,  c:"#A78BFA" },
+              ].map((r,i,arr) => (
+                <div key={r.l} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                  padding:"12px 0", borderBottom:i<arr.length-1?"1px solid rgba(255,255,255,0.04)":"none" }}>
+                  <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.35)", fontWeight:500 }}>{r.l}</span>
+                  <span style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:"22px",
+                    fontWeight:700, color:r.c }}>{r.v}</span>
                 </div>
               ))}
             </div>
 
             {/* Details */}
-            <div style={{ background: "white", borderRadius: "14px", padding: "20px 22px", border: "1.5px solid #EDE8E0" }}>
-              <div style={{ fontSize: "10px", fontWeight: 800, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: "14px" }}>Details</div>
+            <div style={{ background:"#0F1A2E", borderRadius:"16px", padding:"20px 22px",
+              border:"1px solid rgba(255,255,255,0.06)", ...fade(700) }}>
+              <div style={{ fontSize:"10px", fontWeight:700, color:"rgba(255,255,255,0.25)",
+                textTransform:"uppercase", letterSpacing:"0.14em", marginBottom:"14px" }}>Details</div>
               {[
-                { l: "Constituency", v: mp.constituency },
-                { l: "State",        v: mp.state },
-                { l: "Party",        v: mp.party },
-                { l: "Session",      v: "18th Lok Sabha" },
-                { l: "Engagement",   v: mp.engagement_index != null ? String(mp.engagement_index) : null },
-              ].filter(x => x.v).map((x, i, arr) => (
-                <div key={x.l} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-                  padding: "10px 0", borderBottom: i < arr.length-1 ? "1px solid #F3EFE8" : "none", gap: "12px" }}>
-                  <span style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: 600, flexShrink: 0 }}>{x.l}</span>
-                  <span style={{ fontSize: "12px", color: "#111827", fontWeight: 600, textAlign: "right" }}>{x.v}</span>
+                { icon:"◉", l:"Constituency", v:mp.constituency },
+                { icon:"▲", l:"State",        v:mp.state        },
+                { icon:"◈", l:"Party",        v:mp.party        },
+                { icon:"◆", l:"Session",      v:"18th Lok Sabha"},
+                { icon:"⚡", l:"Engagement",  v:eng?String(eng):null },
+              ].filter(x=>x.v).map((x,i,arr) => (
+                <div key={x.l} style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start",
+                  padding:"10px 0", borderBottom:i<arr.length-1?"1px solid rgba(255,255,255,0.04)":"none", gap:"12px" }}>
+                  <div style={{ display:"flex", gap:"7px", alignItems:"center" }}>
+                    <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.15)" }}>{x.icon}</span>
+                    <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", fontWeight:600 }}>{x.l}</span>
+                  </div>
+                  <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.65)", fontWeight:600, textAlign:"right" }}>{x.v}</span>
                 </div>
               ))}
             </div>
 
-            {/* Source note */}
-            <div style={{ padding: "14px 16px", background: "#FFFBF5", borderRadius: "12px", border: "1px solid #FDE68A" }}>
-              <div style={{ fontSize: "9px", fontWeight: 800, color: "#D97706", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "5px" }}>Data Source</div>
-              <p style={{ fontSize: "11px", color: "#92400E", lineHeight: 1.6 }}>PRS Legislative Research · Lok Sabha official records · Zero editorial bias.</p>
+            {/* Data source */}
+            <div style={{ padding:"14px 16px", background:"rgba(245,158,11,0.05)",
+              borderRadius:"12px", border:"1px solid rgba(245,158,11,0.15)", ...fade(800) }}>
+              <div style={{ fontSize:"9px", fontWeight:800, color:"rgba(245,158,11,0.6)",
+                textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"5px" }}>Data Source</div>
+              <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.25)", lineHeight:1.6, margin:0 }}>
+                PRS Legislative Research · Lok Sabha Official Records · Zero editorial bias.
+              </p>
             </div>
 
             {/* Back button */}
-            <Link href="/mp" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-              padding: "12px", background: "#0A1628", borderRadius: "12px", textDecoration: "none",
-              fontSize: "12px", fontWeight: 700, color: "white", transition: "opacity 0.2s" }}>
+            <Link href="/mp" style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"6px",
+              padding:"13px", background:"rgba(255,107,0,0.1)", borderRadius:"12px", textDecoration:"none",
+              fontSize:"12px", fontWeight:700, color:"#FF6B00",
+              border:"1px solid rgba(255,107,0,0.2)",
+              transition:"all 0.2s", ...fade(900) }}>
               ← Back to All MPs
             </Link>
           </div>
         </div>
       </div>
 
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,900;1,400&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        @keyframes spin { to { transform: rotate(360deg); } }
+        * { box-sizing: border-box; }
+      `}</style>
     </div>
   );
 }
