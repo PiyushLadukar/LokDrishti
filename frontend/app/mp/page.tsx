@@ -39,7 +39,7 @@ function Photo({ name, url, size=48 }: { name:string; url?:string; size?:number 
   const hue   = hues[ini.charCodeAt(0) % hues.length];
   if (url && !err) return (
     <div style={{ width:size, height:size, borderRadius:"50%", overflow:"hidden", flexShrink:0, border:"2px solid #E2E8F0" }}>
-      <img src={url} alt={name} onError={()=>setErr(true)} style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"top" }}/>
+      <img src={`/api/proxy-image?url=${encodeURIComponent(url)}`} alt={name} onError={()=>setErr(true)} style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"top" }}/>
     </div>
   );
   return (
