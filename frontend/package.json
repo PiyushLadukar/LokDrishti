@@ -11,6 +11,7 @@
   "dependencies": {
     "d3": "^7.9.0",
     "next": "16.1.6",
+    "next-auth": "^4.24.13",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-simple-maps": "^3.0.0",

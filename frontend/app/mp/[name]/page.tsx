@@ -79,26 +79,20 @@ function RadarChart({ mp, avgAtt, avgQ, avgDeb }: any) {
           <stop offset="100%" stopColor="#FF6B00" stopOpacity="0.05"/>
         </radialGradient>
       </defs>
-      {/* Grid */}
       {gridLevels.map(level => (
         <polygon key={level}
           points={metrics.map((_,i) => polar(level,i).join(",")).join(" ")}
           fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1"/>
       ))}
-      {/* Spokes */}
       {metrics.map((_,i) => {
         const [x,y] = polar(1,i);
         return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(255,255,255,0.07)" strokeWidth="1"/>;
       })}
-      {/* Avg area */}
       <path d={toPath(avgPoints)} fill="rgba(96,165,250,0.08)" stroke="rgba(96,165,250,0.3)" strokeWidth="1.5" strokeDasharray="4,3"/>
-      {/* MP area */}
       <path d={toPath(mpPoints)} fill="url(#mpGrad)" stroke="#FF6B00" strokeWidth="2"/>
-      {/* MP dots */}
       {mpPoints.map(([x,y],i) => (
         <circle key={i} cx={x} cy={y} r="4" fill="#FF6B00" stroke="#0A1628" strokeWidth="2"/>
       ))}
-      {/* Labels */}
       {metrics.map((m,i) => {
         const [x,y] = polar(1.22, i);
         return (
@@ -128,10 +122,20 @@ function AnimBar({ value, max, color, delay=0 }: { value:number; max:number; col
 }
 
 /* ─── MP Photo ─────────────────────────────────────────────── */
+// ✅ FIX: Routes Wikipedia URLs through /api/proxy-image so the server fetches
+// them with Referer: https://en.wikipedia.org/ — bypassing Wikipedia's hotlink block.
 function MPPhoto({ name, photoUrl, size=120, glowColor }: { name:string; photoUrl?:string; size?:number; glowColor:string }) {
   const [err, setErr] = useState(false);
   const [hov, setHov] = useState(false);
   const initials = (name||"?").split(" ").map((w:string)=>w[0]).slice(0,2).join("").toUpperCase();
+
+  // If it's a Wikipedia URL, proxy it through our Next.js server route.
+  // If it's already a local /mp_photos/... path, use it directly.
+  const proxiedSrc = photoUrl
+    ? photoUrl.startsWith("http")
+      ? `/api/proxy-image?url=${encodeURIComponent(photoUrl)}`
+      : photoUrl
+    : null;
 
   return (
     <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
@@ -148,10 +152,13 @@ function MPPhoto({ name, photoUrl, size=120, glowColor }: { name:string; photoUr
       <div style={{ position:"relative", width:size, height:size, borderRadius:"50%", overflow:"hidden",
         border:`2px solid ${glowColor}40`, boxShadow:`0 0 ${hov?40:20}px ${glowColor}60`,
         transition:"box-shadow 0.3s" }}>
-        {photoUrl && !err ? (
-          <img src={photoUrl} alt={name} onError={()=>setErr(true)}
-            referrerPolicy="no-referrer"
-            style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"top center" }}/>
+        {proxiedSrc && !err ? (
+          <img
+            src={proxiedSrc}
+            alt={name}
+            onError={()=>setErr(true)}
+            style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"top center" }}
+          />
         ) : (
           <div style={{ width:"100%", height:"100%", background:`linear-gradient(135deg,${glowColor}30,${glowColor}10)`,
             display:"flex", alignItems:"center", justifyContent:"center",
@@ -247,19 +254,15 @@ export default function MPProfilePage() {
 
       {/* ══ CINEMATIC HERO ══ */}
       <div style={{ background:"linear-gradient(160deg, #0A1628 0%, #0F1E3A 50%, #0A1628 100%)", position:"relative", overflow:"hidden", paddingBottom:"0" }}>
-        {/* Animated dot grid */}
         <div style={{ position:"absolute", inset:0,
           backgroundImage:"radial-gradient(rgba(255,107,0,0.08) 1px, transparent 1px)",
           backgroundSize:"28px 28px", pointerEvents:"none" }}/>
-        {/* Radial glow behind photo */}
         <div style={{ position:"absolute", left:"60px", top:"50%", transform:"translateY(-50%)",
           width:"300px", height:"300px",
           background:`radial-gradient(circle, ${grade.glow} 0%, transparent 70%)`,
           pointerEvents:"none" }}/>
-        {/* Top tricolor line */}
         <div style={{ position:"absolute", top:0, left:0, right:0, height:"3px",
           background:"linear-gradient(90deg,#FF6B00 33%,#FAFAF7 33%,#FAFAF7 66%,#138808 66%)" }}/>
-        {/* Ghost initials */}
         <div style={{ position:"absolute", right:"-20px", top:"50%", transform:"translateY(-50%)",
           fontFamily:"'Cormorant Garamond',serif", fontSize:"220px", fontWeight:900,
           color:"transparent", WebkitTextStroke:"1px rgba(255,255,255,0.03)",
@@ -277,10 +280,9 @@ export default function MPProfilePage() {
           </Link>
 
           <div style={{ display:"flex", gap:"40px", alignItems:"center", flexWrap:"wrap", ...fade(100) }}>
-            {/* Photo */}
+            {/* ✅ Photo now uses proxy */}
             <MPPhoto name={name} photoUrl={photo??undefined} size={120} glowColor={grade.ring}/>
 
-            {/* Name + meta */}
             <div style={{ flex:1, minWidth:"280px" }}>
               <div style={{ display:"flex", alignItems:"center", gap:"12px", flexWrap:"wrap", marginBottom:"10px" }}>
                 <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:"clamp(32px,4.5vw,56px)",
@@ -308,7 +310,6 @@ export default function MPProfilePage() {
                 ))}
               </div>
 
-              {/* Rank pills */}
               <div style={{ display:"flex", gap:"8px", flexWrap:"wrap" }}>
                 {[
                   { icon:"🏆", l:"National Rank", v:`#${Math.round(mp.national_rank??0)}`, c:"#FF6B00" },
@@ -332,7 +333,6 @@ export default function MPProfilePage() {
               </div>
             </div>
 
-            {/* Grade badge */}
             <div style={{ textAlign:"center", ...fade(300) }}>
               <div style={{ width:"120px", height:"120px", borderRadius:"24px",
                 background:`linear-gradient(135deg, ${grade.color}15, ${grade.color}05)`,
@@ -350,7 +350,6 @@ export default function MPProfilePage() {
           </div>
         </div>
 
-        {/* Bottom separator */}
         <div style={{ height:"1px", background:"linear-gradient(90deg, transparent, rgba(255,107,0,0.3), transparent)" }}/>
       </div>
 
@@ -405,7 +404,6 @@ export default function MPProfilePage() {
                 </h2>
               </div>
 
-              {/* Comparison table */}
               <div style={{ display:"grid", gridTemplateColumns:"1fr auto auto auto", gap:"0", marginBottom:"20px" }}>
                 {["Metric","MP Value","Nat. Avg","Diff"].map(h => (
                   <div key={h} style={{ fontSize:"9px", fontWeight:700, color:"rgba(255,255,255,0.2)",
@@ -413,28 +411,27 @@ export default function MPProfilePage() {
                     borderBottom:"1px solid rgba(255,255,255,0.05)" }}>{h}</div>
                 ))}
                 {[
-                  { l:"Attendance",  mpV:`${attPct.toFixed(1)}%`,  avg:`${(avgAtt*100).toFixed(1)}%`, diff:diffAtt,  color:attColor, val:attPct, max:100 },
-                  { l:"Questions",   mpV:String(q),                 avg:avgQ.toFixed(0),               diff:diffQ,    color:"#60A5FA",val:q,      max:350 },
-                  { l:"Debates",     mpV:String(deb),               avg:avgDeb.toFixed(0),             diff:diffDeb,  color:"#A78BFA",val:deb,    max:250 },
-                  { l:"LCI Score",   mpV:lci.toFixed(4),            avg:"0.1202",                      diff:diffLCI,  color:grade.color,val:lci*100,max:100 },
+                  { l:"Attendance",  mpV:`${attPct.toFixed(1)}%`,  avg:`${(avgAtt*100).toFixed(1)}%`, diff:diffAtt,  color:attColor },
+                  { l:"Questions",   mpV:String(q),                 avg:avgQ.toFixed(0),               diff:diffQ,    color:"#60A5FA" },
+                  { l:"Debates",     mpV:String(deb),               avg:avgDeb.toFixed(0),             diff:diffDeb,  color:"#A78BFA" },
+                  { l:"LCI Score",   mpV:lci.toFixed(4),            avg:"0.1202",                      diff:diffLCI,  color:grade.color },
                 ].map((row,i) => (
-                  <>
-                    <div key={`l${i}`} style={{ padding:"14px 0", borderBottom:"1px solid rgba(255,255,255,0.04)",
+                  <React.Fragment key={i}>
+                    <div style={{ padding:"14px 0", borderBottom:"1px solid rgba(255,255,255,0.04)",
                       fontSize:"13px", color:"rgba(255,255,255,0.6)", fontWeight:500 }}>{row.l}</div>
-                    <div key={`v${i}`} style={{ padding:"14px 12px", borderBottom:"1px solid rgba(255,255,255,0.04)",
+                    <div style={{ padding:"14px 12px", borderBottom:"1px solid rgba(255,255,255,0.04)",
                       fontSize:"14px", fontWeight:700, color:"white", fontFamily:"'Cormorant Garamond',serif" }}>{row.mpV}</div>
-                    <div key={`a${i}`} style={{ padding:"14px 12px", borderBottom:"1px solid rgba(255,255,255,0.04)",
+                    <div style={{ padding:"14px 12px", borderBottom:"1px solid rgba(255,255,255,0.04)",
                       fontSize:"13px", color:"rgba(255,255,255,0.3)" }}>{row.avg}</div>
-                    <div key={`d${i}`} style={{ padding:"14px 0", borderBottom:"1px solid rgba(255,255,255,0.04)",
+                    <div style={{ padding:"14px 0", borderBottom:"1px solid rgba(255,255,255,0.04)",
                       fontSize:"13px", fontWeight:800,
                       color:row.diff>=0?"#00C896":"#EF4444" }}>
                       {row.diff>=0?"+":""}{row.diff.toFixed(0)}%
                     </div>
-                  </>
+                  </React.Fragment>
                 ))}
               </div>
 
-              {/* Animated bars */}
               <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
                 {[
                   { l:"Attendance",  val:attPct, max:100,  avg:avgAtt*100, c:attColor  },
@@ -453,7 +450,6 @@ export default function MPProfilePage() {
                       </div>
                       <div style={{ position:"relative", height:"6px", background:"rgba(255,255,255,0.05)", borderRadius:"3px" }}>
                         <AnimBar value={bar.val} max={bar.max} color={bar.c} delay={700+i*100}/>
-                        {/* Avg marker */}
                         <div style={{ position:"absolute", top:"-4px", left:`${avgPct}%`, width:"2px", height:"14px",
                           background:"rgba(255,255,255,0.2)", borderRadius:"1px", transform:"translateX(-50%)" }}/>
                       </div>
@@ -462,7 +458,6 @@ export default function MPProfilePage() {
                 })}
               </div>
 
-              {/* Diff callouts */}
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"10px", marginTop:"20px" }}>
                 {[
                   { l:"Attendance", diff:diffAtt  },
@@ -486,7 +481,7 @@ export default function MPProfilePage() {
               </div>
             </div>
 
-            {/* AI Insight Box */}
+            {/* Data Insight */}
             <div style={{ background:"linear-gradient(135deg, #0F1A2E, #151F35)",
               borderRadius:"16px", padding:"24px 28px",
               border:"1px solid rgba(255,107,0,0.15)",
@@ -504,7 +499,6 @@ export default function MPProfilePage() {
               </p>
             </div>
 
-            {/* Silent MP warning */}
             {silent && (
               <div style={{ background:"rgba(239,68,68,0.06)", borderRadius:"16px", padding:"22px 26px",
                 border:"1.5px solid rgba(239,68,68,0.2)", borderLeft:"5px solid #EF4444", ...fade(900) }}>
@@ -520,7 +514,6 @@ export default function MPProfilePage() {
           {/* ── RIGHT COLUMN ── */}
           <div style={{ display:"flex", flexDirection:"column", gap:"16px" }}>
 
-            {/* Radar Chart */}
             <div style={{ background:"#0F1A2E", borderRadius:"20px", padding:"24px",
               border:"1px solid rgba(255,255,255,0.06)", ...fade(500) }}>
               <div style={{ fontSize:"10px", fontWeight:700, color:"rgba(255,255,255,0.3)",
@@ -542,7 +535,6 @@ export default function MPProfilePage() {
               </div>
             </div>
 
-            {/* Rankings Glass Card */}
             <div style={{ background:"rgba(255,255,255,0.02)", backdropFilter:"blur(20px)",
               borderRadius:"18px", padding:"22px 24px",
               border:"1px solid rgba(255,255,255,0.06)",
@@ -565,7 +557,6 @@ export default function MPProfilePage() {
               ))}
             </div>
 
-            {/* Details */}
             <div style={{ background:"#0F1A2E", borderRadius:"16px", padding:"20px 22px",
               border:"1px solid rgba(255,255,255,0.06)", ...fade(700) }}>
               <div style={{ fontSize:"10px", fontWeight:700, color:"rgba(255,255,255,0.25)",
@@ -588,7 +579,6 @@ export default function MPProfilePage() {
               ))}
             </div>
 
-            {/* Data source */}
             <div style={{ padding:"14px 16px", background:"rgba(245,158,11,0.05)",
               borderRadius:"12px", border:"1px solid rgba(245,158,11,0.15)", ...fade(800) }}>
               <div style={{ fontSize:"9px", fontWeight:800, color:"rgba(245,158,11,0.6)",
@@ -598,7 +588,6 @@ export default function MPProfilePage() {
               </p>
             </div>
 
-            {/* Back button */}
             <Link href="/mp" style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"6px",
               padding:"13px", background:"rgba(255,107,0,0.1)", borderRadius:"12px", textDecoration:"none",
               fontSize:"12px", fontWeight:700, color:"#FF6B00",
