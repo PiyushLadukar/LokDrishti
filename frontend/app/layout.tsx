@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "./components/navbar";
-import { SessionProvider } from "next-auth/react";
+import { Providers } from "./provider";
 
 export const metadata: Metadata = {
   title: "LokDrishti — Civic Intelligence for India",
@@ -17,13 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <SessionProvider>
+        <Providers>
           <Navbar />
-
           <main style={{ paddingTop: "64px" }}>
             {children}
           </main>
-
           <footer
             style={{
               background: "#0A1628",
@@ -40,14 +38,12 @@ export default function RootLayout({
             }}
           >
             <span>
-              <span style={{ color: "#FF6B00", fontWeight: 700 }}>
-                LokDrishti
-              </span>{" "}
-              · Civic Intelligence Engine
+              <span style={{ color: "#FF6B00", fontWeight: 700 }}>LokDrishti</span>
+              {" "}· Civic Intelligence Engine
             </span>
             <span>18th Lok Sabha · Data: PRS Legislative Research</span>
           </footer>
-        </SessionProvider>
+        </Providers>
       </body>
     </html>
   );
