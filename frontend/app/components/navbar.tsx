@@ -31,7 +31,7 @@ export default function Navbar() {
           top: 0,
           left: 0,
           right: 0,
-          height: "2px",
+          height: "3px",
           background:
             "linear-gradient(90deg,#FF6B00 33.3%,#FAFAF7 33.3%,#FAFAF7 66.6%,#138808 66.6%)",
         }}
@@ -55,7 +55,7 @@ export default function Navbar() {
             textDecoration: "none",
             display: "flex",
             alignItems: "center",
-            gap: "8px",
+            gap: "10px",
           }}
         >
           <Image
@@ -116,7 +116,7 @@ export default function Navbar() {
                 padding: "8px 16px",
                 borderRadius: "6px",
                 textDecoration: "none",
-                fontSize: "14px",
+                fontSize: "17px",
                 fontWeight: 500,
                 color: pathname?.startsWith(link.href) ? "#FF6B00" : "#4A5568",
                 background: pathname?.startsWith(link.href) ? "#FFF0E5" : "transparent",
@@ -138,7 +138,7 @@ export default function Navbar() {
               color: "white",
               borderRadius: "100px",
               textDecoration: "none",
-              fontSize: "13px",
+              fontSize: "17px",
               fontWeight: 700,
               letterSpacing: "0.04em",
               boxShadow: "0 2px 16px rgba(255,107,0,0.28)",
@@ -170,7 +170,7 @@ export default function Navbar() {
                 borderRadius: "100px",
                 border: "1.5px solid #E2D9CE",
                 background: "white",
-                fontSize: "13px",
+                fontSize: "17px",
                 fontWeight: 600,
                 color: "#0A1628",
                 cursor: "pointer",
