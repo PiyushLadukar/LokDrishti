@@ -1,1 +1,0 @@
-print("Manthan singh Pro Gamer Next World Cup Champion")
