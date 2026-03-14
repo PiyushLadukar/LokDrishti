@@ -16,48 +16,30 @@ SERIOUS_IPC = {
 }
 
 
-# ------------------------------------------------
-# GET UNIQUE WINNER LIST
-# ------------------------------------------------
-
 def get_all_candidates():
-
-    print("Loading candidate list...")
-
     url = f"{BASE}/index.php?action=show_winners"
-
     r = requests.get(url, headers=HEADERS)
-
     soup = BeautifulSoup(r.text, "html.parser")
 
     candidates = {}
 
     for link in soup.find_all("a", href=re.compile("candidate_id=")):
-
         name = link.get_text(strip=True)
-
         m = re.search(r'candidate_id=(\d+)', link["href"])
-
         if not m:
             continue
 
         cid = m.group(1)
 
         if cid not in candidates:
-
             candidates[cid] = {
                 "name": name,
                 "candidate_id": cid
             }
 
-    print("Unique candidates:", len(candidates))
-
+    print("Candidates:", len(candidates))
     return list(candidates.values())
 
-
-# ------------------------------------------------
-# SCRAPE CANDIDATE PAGE
-# ------------------------------------------------
 
 def scrape_candidate(candidate):
 
@@ -67,7 +49,6 @@ def scrape_candidate(candidate):
     url = f"{BASE}/candidate.php?candidate_id={cid}"
 
     r = requests.get(url, headers=HEADERS)
-
     soup = BeautifulSoup(r.text, "html.parser")
 
     data = {
@@ -83,30 +64,20 @@ def scrape_candidate(candidate):
     text = soup.get_text(" ", strip=True)
 
     m = re.search(r'Number of Criminal Cases\s*:\s*(\d+)', text)
-
     if m:
         data["total_cases"] = int(m.group(1))
 
-    # ------------------------------------------------
-    # IPC SUMMARY
-    # ------------------------------------------------
-
-    ipc_heading = soup.find("h4", string=re.compile("IPC", re.I))
+    ipc_heading = soup.find(string=re.compile("Brief Details of IPC", re.I))
 
     if ipc_heading:
-
-        ul_lists = ipc_heading.find_all_next("ul", limit=2)
-
-        for ul in ul_lists:
-
+        ul = ipc_heading.find_parent().find_next("ul")
+        if ul:
             for li in ul.find_all("li"):
 
                 txt = li.get_text(" ", strip=True)
 
                 badge = li.find("span")
-
                 count = 1
-
                 if badge:
                     try:
                         count = int(badge.get_text(strip=True))
@@ -114,11 +85,7 @@ def scrape_candidate(candidate):
                         pass
 
                 m = re.search(r'IPC Section[-– ](\d+[A-Z]?)', txt)
-
-                section = None
-
-                if m:
-                    section = m.group(1)
+                section = m.group(1) if m else None
 
                 data["ipc_summary"].append({
                     "description": txt,
@@ -127,20 +94,11 @@ def scrape_candidate(candidate):
                     "is_serious": section in SERIOUS_IPC if section else False
                 })
 
-    # ------------------------------------------------
-    # CASE TABLES
-    # ------------------------------------------------
-
     tables = soup.find_all("table", id="cases")
 
-    pending_table = tables[0] if len(tables) > 0 else None
-    convicted_table = tables[1] if len(tables) > 1 else None
+    if tables:
 
-    # ---------------- Pending Cases ----------------
-
-    if pending_table:
-
-        rows = pending_table.find_all("tr")[1:]
+        rows = tables[0].find_all("tr")[1:]
 
         for row in rows:
 
@@ -164,11 +122,9 @@ def scrape_candidate(candidate):
                 "ipc_sections": ipc
             })
 
-    # ---------------- Convicted Cases ----------------
+    if len(tables) > 1:
 
-    if convicted_table:
-
-        rows = convicted_table.find_all("tr")[1:]
+        rows = tables[1].find_all("tr")[1:]
 
         for row in rows:
 
@@ -187,10 +143,6 @@ def scrape_candidate(candidate):
     return data
 
 
-# ------------------------------------------------
-# MAIN
-# ------------------------------------------------
-
 def main():
 
     candidates = get_all_candidates()
@@ -203,17 +155,26 @@ def main():
 
         print(f"[{i+1}/{total}] {candidate['name']}")
 
-        data = scrape_candidate(candidate)
-
-        results[candidate["name"]] = data
+        try:
+            data = scrape_candidate(candidate)
+            results[candidate["name"]] = data
+        except:
+            results[candidate["name"]] = {
+                "name": candidate["name"],
+                "total_cases": 0,
+                "serious_cases": 0,
+                "ipc_summary": [],
+                "pending_cases": [],
+                "convicted_cases": [],
+                "source_url": None
+            }
 
         time.sleep(0.5)
 
     with open("data/criminal_records.json", "w", encoding="utf-8") as f:
-
         json.dump(results, f, indent=2, ensure_ascii=False)
 
-    print("\nSaved to data/criminal_records.json")
+    print("Saved → data/criminal_records.json")
 
 
 if __name__ == "__main__":
