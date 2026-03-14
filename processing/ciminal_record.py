@@ -4,10 +4,10 @@ import sqlite3
 import json
 import re
 import time
+from difflib import SequenceMatcher
 
-DB_PATH = "processing/lokdrishti.db"
-OUTPUT_FILE = "data/criminal_records.json"
 BASE = "https://myneta.info/LokSabha2024"
+DB_PATH = "processing/lokdrishti.db"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0"
@@ -18,9 +18,10 @@ SERIOUS_IPC = {
     "120B","121","124A","468","420","354","379"
 }
 
-# --------------------------------------------------
-# LOAD MP NAMES FROM DATABASE
-# --------------------------------------------------
+
+# -------------------------------
+# LOAD MPs FROM DATABASE
+# -------------------------------
 
 def get_mp_names():
 
@@ -36,44 +37,71 @@ def get_mp_names():
     return names
 
 
-# --------------------------------------------------
-# FIND CANDIDATE ID FROM MYNETA SEARCH
-# --------------------------------------------------
+# -------------------------------
+# GET ALL CANDIDATES
+# -------------------------------
 
-def find_candidate_id(name):
+def get_all_candidates():
 
-    url = f"{BASE}/index.php"
+    print("Downloading candidate list...")
 
-    params = {
-        "action":"show_candidates",
-        "winner_filter":"w",
-        "search_string":name
-    }
+    url = f"{BASE}/index.php?action=show_winners"
 
-    r = requests.get(url,params=params,headers=HEADERS)
+    r = requests.get(url,headers=HEADERS)
 
     soup = BeautifulSoup(r.text,"html.parser")
 
-    link = soup.find("a",href=re.compile("candidate_id="))
+    candidates = []
 
-    if not link:
-        return None
+    for link in soup.find_all("a",href=re.compile("candidate_id=")):
 
-    m = re.search(r'candidate_id=(\d+)',link["href"])
+        name = link.get_text(strip=True)
 
-    if m:
-        return m.group(1)
+        m = re.search(r'candidate_id=(\d+)',link["href"])
+
+        if not m:
+            continue
+
+        candidates.append({
+            "name":name,
+            "candidate_id":m.group(1)
+        })
+
+    print("Candidates scraped:",len(candidates))
+
+    return candidates
+
+
+# -------------------------------
+# FUZZY MATCH
+# -------------------------------
+
+def match_name(mp_name,candidates):
+
+    best = None
+    best_score = 0
+
+    for c in candidates:
+
+        score = SequenceMatcher(None,mp_name.lower(),c["name"].lower()).ratio()
+
+        if score > best_score:
+            best_score = score
+            best = c
+
+    if best_score > 0.55:
+        return best
 
     return None
 
 
-# --------------------------------------------------
+# -------------------------------
 # SCRAPE CRIMINAL DATA
-# --------------------------------------------------
+# -------------------------------
 
-def scrape_candidate(candidate_id):
+def scrape_candidate(cid):
 
-    url = f"{BASE}/candidate.php?candidate_id={candidate_id}"
+    url = f"{BASE}/candidate.php?candidate_id={cid}"
 
     r = requests.get(url,headers=HEADERS)
 
@@ -95,62 +123,11 @@ def scrape_candidate(candidate_id):
     if m:
         data["total_cases"] = int(m.group(1))
 
-    # --------------------------------------------------
-    # IPC SUMMARY
-    # --------------------------------------------------
-
-    ipc_heading = soup.find("h4",string=re.compile("IPC",re.I))
-
-    if ipc_heading:
-
-        ul_lists = ipc_heading.find_all_next("ul",limit=2)
-
-        for ul in ul_lists:
-
-            for li in ul.find_all("li"):
-
-                txt = li.get_text(" ",strip=True)
-
-                badge = li.find("span")
-
-                count = 1
-
-                if badge:
-                    try:
-                        count = int(badge.get_text(strip=True))
-                    except:
-                        pass
-
-                m = re.search(r'IPC Section[-– ](\d+[A-Z]?)',txt)
-
-                section = None
-
-                if m:
-                    section = m.group(1)
-
-                data["ipc_summary"].append({
-                    "description":txt,
-                    "ipc_section":section,
-                    "count":count,
-                    "is_serious":section in SERIOUS_IPC if section else False
-                })
-
-    # --------------------------------------------------
-    # CASE TABLES
-    # --------------------------------------------------
-
     tables = soup.find_all("table",id="cases")
 
-    pending_table = tables[0] if len(tables) > 0 else None
-    convicted_table = tables[1] if len(tables) > 1 else None
+    if tables:
 
-    # --------------------------------------------------
-    # PENDING CASES
-    # --------------------------------------------------
-
-    if pending_table:
-
-        rows = pending_table.find_all("tr")[1:]
+        rows = tables[0].find_all("tr")[1:]
 
         for row in rows:
 
@@ -167,25 +144,14 @@ def scrape_candidate(candidate_id):
                 data["serious_cases"] += 1
 
             data["pending_cases"].append({
-                "serial":cells[0],
-                "fir_no":cells[1],
                 "case_no":cells[2],
                 "court":cells[3],
-                "ipc_sections":ipc,
-                "other_sections":cells[5] if len(cells) > 5 else "",
-                "charges_framed":cells[6] if len(cells) > 6 else "",
-                "date_framed":cells[7] if len(cells) > 7 else "",
-                "appeal_filed":cells[8] if len(cells) > 8 else "",
-                "appeal_status":cells[9] if len(cells) > 9 else ""
+                "ipc_sections":ipc
             })
 
-    # --------------------------------------------------
-    # CONVICTED CASES
-    # --------------------------------------------------
+    if len(tables) > 1:
 
-    if convicted_table:
-
-        rows = convicted_table.find_all("tr")[1:]
+        rows = tables[1].find_all("tr")[1:]
 
         for row in rows:
 
@@ -195,39 +161,35 @@ def scrape_candidate(candidate_id):
                 continue
 
             data["convicted_cases"].append({
-                "serial":cells[0],
                 "case_no":cells[1],
                 "court":cells[2],
-                "ipc_sections":cells[3],
-                "other_sections":cells[4] if len(cells) > 4 else "",
-                "punishment":cells[5] if len(cells) > 5 else "",
-                "date_convicted":cells[6] if len(cells) > 6 else "",
-                "appeal_filed":cells[7] if len(cells) > 7 else "",
-                "appeal_status":cells[8] if len(cells) > 8 else ""
+                "ipc_sections":cells[3]
             })
 
     return data
 
 
-# --------------------------------------------------
+# -------------------------------
 # MAIN
-# --------------------------------------------------
+# -------------------------------
 
 def main():
 
     mp_names = get_mp_names()
 
+    candidates = get_all_candidates()
+
     results = {}
 
-    print("Loaded MPs:",len(mp_names))
+    print("Matching MPs...")
 
     for i,name in enumerate(mp_names):
 
         print(f"[{i+1}/{len(mp_names)}] {name}")
 
-        cid = find_candidate_id(name)
+        match = match_name(name,candidates)
 
-        if not cid:
+        if not match:
 
             results[name] = {
                 "total_cases":0,
@@ -240,17 +202,17 @@ def main():
 
             continue
 
-        data = scrape_candidate(cid)
+        data = scrape_candidate(match["candidate_id"])
 
         results[name] = data
 
-        time.sleep(1)
+        time.sleep(0.5)
 
-    with open(OUTPUT_FILE,"w",encoding="utf-8") as f:
+    with open("data/criminal_records.json","w",encoding="utf-8") as f:
 
         json.dump(results,f,indent=2,ensure_ascii=False)
 
-    print("Saved to:",OUTPUT_FILE)
+    print("Saved to data/criminal_records.json")
 
 
 if __name__ == "__main__":
