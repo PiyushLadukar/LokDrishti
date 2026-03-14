@@ -130,7 +130,7 @@ export default function Navbar() {
 
           {/* Explore Button */}
           <Link
-            href="/ranking"
+            href="/mp"
             style={{
               marginLeft: "16px",
               padding: "10px 24px",

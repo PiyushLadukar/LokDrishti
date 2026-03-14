@@ -183,6 +183,8 @@ export default function MPProfilePage() {
   const [avgQ,    setAvgQ]    = useState(78);
   const [avgDeb,  setAvgDeb]  = useState(15);
   const [visible, setVisible] = useState(false);
+  const [criminal, setCriminal] = useState<any>(null);
+
 
   useEffect(() => {
     if (!name) return;
@@ -207,6 +209,14 @@ export default function MPProfilePage() {
       setTimeout(() => setVisible(true), 100);
     })();
     fetch("/mp_photos.json").then(r=>r.json()).then(d=>setPhoto(d[name]||null)).catch(()=>{});
+    fetch(`http://127.0.0.1:5000/api/mps/${encodeURIComponent(name)}/criminal`)
+     .then(r => r.json())
+     .then(d => setCriminal(d.criminal_record))
+     .catch(()=>{});
+
+
+
+
   }, [name]);
 
   if (loading) return (
@@ -250,7 +260,11 @@ export default function MPProfilePage() {
   });
 
   return (
-    <div style={{ minHeight:"100vh", fontFamily:"'DM Sans',sans-serif", background:"#080E1A" }}>
+    <div style={{ minHeight:"100vh", fontFamily:"'DM Sans',sans-serif", background:`
+radial-gradient(circle at 20% 10%, rgba(255,107,0,0.15), transparent 40%),
+radial-gradient(circle at 80% 80%, rgba(96,165,250,0.12), transparent 40%),
+linear-gradient(180deg,#020617,#030712)
+` }}>
 
       {/* ══ CINEMATIC HERO ══ */}
       <div style={{ background:"linear-gradient(160deg, #0A1628 0%, #0F1E3A 50%, #0A1628 100%)", position:"relative", overflow:"hidden", paddingBottom:"0" }}>
@@ -368,10 +382,10 @@ export default function MPProfilePage() {
                 { icon:"💬", l:"Questions",  v:q,      fmt:(x:number)=>String(Math.round(x)), c:"#60A5FA", sub:"Questions raised",  max:350, pct:(q/350)*100 },
                 { icon:"🎤", l:"Debates",    v:deb,    fmt:(x:number)=>String(Math.round(x)), c:"#A78BFA", sub:"Debates participated",max:250, pct:(deb/250)*100 },
               ].map((card,i) => (
-                <div key={i} style={{ background:"#0F1A2E", borderRadius:"16px",
+                <div key={i} style={{ background:"rgba(15,23,42,0.65)", borderRadius:"16px",
                   padding:"22px 24px", border:`1px solid rgba(255,255,255,0.06)`,
                   borderTop:`3px solid ${card.c}`,
-                  boxShadow:`0 4px 24px rgba(0,0,0,0.3)`,
+                  boxShadow:"0 12px 40px rgba(0,0,0,0.55)",
                   ...fade(400 + i*60) }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"12px" }}>
                     <div>
@@ -394,7 +408,11 @@ export default function MPProfilePage() {
             </div>
 
             {/* Performance vs National Average */}
-            <div style={{ background:"#0F1A2E", borderRadius:"20px", padding:"28px 32px",
+            <div style={{ background : `
+radial-gradient(circle at 20% 10%, rgba(255,107,0,0.15), transparent 40%),
+radial-gradient(circle at 80% 80%, rgba(96,165,250,0.12), transparent 40%),
+linear-gradient(180deg,#020617,#030712)
+`, borderRadius:"20px", padding:"28px 32px",
               border:"1px solid rgba(255,255,255,0.06)", ...fade(600) }}>
               <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"24px" }}>
                 <div style={{ width:"18px", height:"2px", background:"#FF6B00", borderRadius:"1px" }}/>
@@ -480,6 +498,206 @@ export default function MPProfilePage() {
                 ))}
               </div>
             </div>
+
+
+
+
+
+
+
+
+
+
+            {/* ═══ CRIMINAL INTELLIGENCE ═══ */}
+
+{criminal && (
+<div style={{
+background:"linear-gradient(135deg,#0F1A2E,#1a1220)",
+borderRadius:"20px",
+padding:"28px",
+border:"1px solid rgba(239,68,68,0.3)",
+boxShadow:"0 0 40px rgba(239,68,68,0.15)"
+}}>
+
+<div style={{
+fontSize:"11px",
+fontWeight:800,
+color:"#EF4444",
+letterSpacing:"0.15em",
+textTransform:"uppercase",
+marginBottom:"20px"
+}}>
+⚖ Criminal Records
+</div>
+
+
+{/* Top Metrics */}
+
+<div style={{
+display:"grid",
+gridTemplateColumns:"repeat(3,1fr)",
+gap:"14px",
+marginBottom:"20px"
+}}>
+
+{[
+{label:"Total Cases",value:criminal.total_cases,color:"#EF4444"},
+{label:"Serious Cases",value:criminal.serious_cases,color:"#FF6B00"},
+{label:"Pending Cases",value:criminal.pending_cases?.length || 0,color:"#F59E0B"}
+].map((m,i)=>(
+<div key={i} style={{
+padding:"16px",
+borderRadius:"12px",
+background:"rgba(239,68,68,0.05)",
+border:"1px solid rgba(239,68,68,0.2)"
+}}>
+<div style={{
+fontSize:"10px",
+color:"rgba(255,255,255,0.4)",
+textTransform:"uppercase"
+}}>
+{m.label}
+</div>
+
+<div style={{
+fontFamily:"Cormorant Garamond",
+fontSize:"36px",
+fontWeight:700,
+color:m.color
+}}>
+{m.value}
+</div>
+
+</div>
+))}
+
+</div>
+
+
+{/* IPC SUMMARY */}
+
+{criminal.ipc_summary?.length>0 && (
+
+<div style={{marginBottom:"20px"}}>
+
+<div style={{
+fontSize:"10px",
+color:"rgba(255,255,255,0.4)",
+letterSpacing:"0.1em",
+textTransform:"uppercase",
+marginBottom:"10px"
+}}>
+IPC Sections
+</div>
+
+<div style={{
+display:"flex",
+flexWrap:"wrap",
+gap:"8px"
+}}>
+
+{criminal.ipc_summary.slice(0,10).map((ipc:any,i:number)=>(
+<div key={i} style={{
+padding:"6px 12px",
+borderRadius:"100px",
+background:"rgba(255,255,255,0.04)",
+border:"1px solid rgba(255,255,255,0.08)",
+fontSize:"11px",
+color:"rgba(255,255,255,0.7)"
+}}>
+IPC {ipc.ipc_section} • {ipc.count}
+</div>
+))}
+
+</div>
+
+</div>
+)}
+
+
+{/* Pending Cases */}
+
+{criminal.pending_cases?.length>0 && (
+
+<div>
+
+<div style={{
+fontSize:"10px",
+color:"rgba(255,255,255,0.4)",
+letterSpacing:"0.1em",
+textTransform:"uppercase",
+marginBottom:"10px"
+}}>
+Pending Cases
+</div>
+
+<div style={{
+display:"flex",
+flexDirection:"column",
+gap:"10px"
+}}>
+
+{criminal.pending_cases.slice(0,3).map((c:any,i:number)=>(
+<div key={i} style={{
+padding:"12px",
+borderRadius:"10px",
+background:"rgba(255,255,255,0.03)",
+border:"1px solid rgba(255,255,255,0.06)"
+}}>
+
+<div style={{
+fontSize:"12px",
+fontWeight:700,
+color:"white"
+}}>
+Case {c.serial}
+</div>
+
+<div style={{
+fontSize:"11px",
+color:"rgba(255,255,255,0.5)"
+}}>
+{c.fir_no || c.case_no}
+</div>
+
+<div style={{
+fontSize:"11px",
+color:"#F59E0B"
+}}>
+IPC: {c.ipc_sections}
+</div>
+
+</div>
+))}
+
+</div>
+
+</div>
+)}
+
+
+{/* Source */}
+
+{criminal.source_url && (
+<a
+href={criminal.source_url}
+target="_blank"
+style={{
+display:"inline-block",
+marginTop:"18px",
+fontSize:"12px",
+fontWeight:700,
+color:"#FF6B00",
+textDecoration:"none"
+}}
+>
+View Full Affidavit →
+</a>
+)}
+
+</div>
+)}
+
 
             {/* Data Insight */}
             <div style={{ background:"linear-gradient(135deg, #0F1A2E, #151F35)",
