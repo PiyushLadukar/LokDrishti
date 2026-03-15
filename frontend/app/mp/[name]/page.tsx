@@ -208,6 +208,13 @@ export default function MPProfilePage() {
       setLoading(false);
       setTimeout(() => setVisible(true), 100);
     })();
+
+  if (!name) return;
+
+  // ✅ Track MP profile views for user dashboard
+  const prev = parseInt(localStorage.getItem("ld_mps_viewed") || "0");
+  localStorage.setItem("ld_mps_viewed", String(prev + 1));
+      
     fetch("/mp_photos.json").then(r=>r.json()).then(d=>setPhoto(d[name]||null)).catch(()=>{});
     fetch(`http://127.0.0.1:5000/api/mps/${encodeURIComponent(name)}/criminal`)
      .then(r => r.json())
