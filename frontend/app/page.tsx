@@ -315,7 +315,7 @@ function MadeBy() {
         transition: "opacity 0.7s ease 0.5s, transform 0.7s ease 0.5s",
         textAlign: "center",
       }}>
-        Built with ❤️ for civic transparency · LokDrishti © {new Date().getFullYear()}
+       Know Before You Vote · LokDrishti © 2026 {new Date().getFullYear()}
       </div>
 
       <style>{`
