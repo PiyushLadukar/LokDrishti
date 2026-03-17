@@ -827,7 +827,7 @@ View Full Affidavit →
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,900;1,400&family=DM+Sans:wght@400;500;600;700;800&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
-        * { box-sizing: border-box; }
+        *, *::before, *::after { box-sizing: border-box; }
       `}</style>
     </div>
   );

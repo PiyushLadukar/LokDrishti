@@ -58,7 +58,7 @@ export default function RankingPage() {
     let list = [...mps];
 
     if (silentOnly) {
-      list = list.filter(mp => (mp.questions_raised ?? 0) === 0 && (mp.debates ?? 0) === 0);
+      list = list.filter(mp => (mp.questions_raised ?? mp.questions ?? 0) === 0 && (mp.debates ?? 0) === 0);
     }
     if (stateFilter !== "All") list = list.filter(mp => mp.state === stateFilter);
     if (partyFilter !== "All") list = list.filter(mp => mp.party === partyFilter);
@@ -268,8 +268,8 @@ export default function RankingPage() {
               {pageData.map((mp, i) => {
                 const rank = (page - 1) * PER_PAGE + i + 1;
                 const lci  = mp.lci_score ?? 0;
-                const att  = mp.attendance_pct ?? 0;
-                const q    = mp.questions_raised ?? 0;
+                const att = mp.attendance_pct ?? mp.attendance ?? 0;
+                const q   = mp.questions_raised ?? mp.questions ?? 0;
                 const deb  = mp.debates ?? 0;
                 const grade = getGrade(lci);
                 const gc    = GRADE_COLOR[grade];
