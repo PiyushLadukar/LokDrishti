@@ -210,3 +210,10 @@ node_modules/
 frontend/node_modules/
 .next/
 .env.local
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

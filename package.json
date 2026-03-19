@@ -1,5 +1,10 @@
 {
   "dependencies": {
     "next-auth": "^4.24.13"
-  }
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0"
+  },
+  "scripts": {}
 }
