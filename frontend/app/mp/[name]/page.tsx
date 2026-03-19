@@ -274,7 +274,7 @@ linear-gradient(180deg,#020617,#030712)
 ` }}>
 
       {/* ══ CINEMATIC HERO ══ */}
-      <div style={{ background:"linear-gradient(160deg, #0A1628 0%, #0F1E3A 50%, #0A1628 100%)", position:"relative", overflow:"hidden", paddingBottom:"0" }}>
+      <div style={{ background:"linear-gradient(160deg, #0A1628 0%, #0F1E3A 50%, #0A1628 100%)", position:"relative",paddingTop:"80px", overflow:"hidden", paddingBottom:"0" }}>
         <div style={{ position:"absolute", inset:0,
           backgroundImage:"radial-gradient(rgba(255,107,0,0.08) 1px, transparent 1px)",
           backgroundSize:"28px 28px", pointerEvents:"none" }}/>
