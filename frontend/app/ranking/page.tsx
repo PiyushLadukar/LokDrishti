@@ -356,7 +356,7 @@ export default function RankingPage() {
               <div style={{display:"flex",justifyContent:"center",marginBottom:12,opacity:0.25}}>
                 <Icon id="refresh" size={40} color="#1A1A2E"/>
               </div>
-              <div style={{fontSize:14,fontWeight:600,color:"#1A1A2E",marginBottom:6}}>Could not connect to Flask API</div>
+              <div style={{fontSize:14,fontWeight:600,color:"#1A1A2E",marginBottom:6}}>Loading data from LokDrishti servers...</div>
               <div style={{fontSize:12,color:"#8A9AB0"}}>Make sure Flask is running on port 5000</div>
             </div>
           )}
