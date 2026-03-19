@@ -131,11 +131,7 @@ function MPPhoto({ name, photoUrl, size=120, glowColor }: { name:string; photoUr
 
   // If it's a Wikipedia URL, proxy it through our Next.js server route.
   // If it's already a local /mp_photos/... path, use it directly.
-  const proxiedSrc = photoUrl
-    ? photoUrl.startsWith("http")
-      ? `/api/proxy-image?url=${encodeURIComponent(photoUrl)}`
-      : photoUrl
-    : null;
+  const proxiedSrc = photoUrl;
 
   return (
     <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
@@ -185,6 +181,31 @@ export default function MPProfilePage() {
   const [visible, setVisible] = useState(false);
   const [criminal, setCriminal] = useState<any>(null);
 
+  useEffect(() => {
+  if (!name) return;
+
+  const normalize = (str: string) =>
+    str.toLowerCase().replace(/[^a-z]/g, "");
+
+  fetch("/mp_photos.json")
+    .then(r => r.json())
+    .then(data => {
+      const found = data.find((mp: any) =>
+        normalize(mp.name).includes(normalize(name)) ||
+        normalize(name).includes(normalize(mp.name))
+      );
+
+      console.log("🎯 FOUND PHOTO:", found);
+
+      setPhoto(found?.photo || null);
+    })
+    .catch(err => {
+      console.error("Photo error:", err);
+      setPhoto(null);
+    });
+
+}, [name]);
+
 
   useEffect(() => {
     if (!name) return;
@@ -214,8 +235,7 @@ export default function MPProfilePage() {
   // ✅ Track MP profile views for user dashboard
   const prev = parseInt(localStorage.getItem("ld_mps_viewed") || "0");
   localStorage.setItem("ld_mps_viewed", String(prev + 1));
-      
-    fetch("/mp_photos.json").then(r=>r.json()).then(d=>setPhoto(d[name]||null)).catch(()=>{});
+  
     fetch(`http://127.0.0.1:5000/api/mps/${encodeURIComponent(name)}/criminal`)
      .then(r => r.json())
      .then(d => setCriminal(d.criminal_record))

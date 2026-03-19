@@ -1,53 +1,72 @@
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 import json
+import time
 
-URL = "https://en.wikipedia.org/wiki/List_of_members_of_the_18th_Lok_Sabha"
+# ✅ Load your CSV
+df = pd.read_csv("data/18 LS MP Track.csv")
+
+mp_names = df["mp_name"].dropna().unique()
+
+print(f"✅ Total MPs: {len(mp_names)}")
 
 headers = {
     "User-Agent": "Mozilla/5.0"
 }
 
-res = requests.get(URL, headers=headers)
+results = []
 
-if res.status_code != 200:
-    print("❌ Failed to fetch page")
-    exit()
+def get_wiki_image(name):
+    try:
+        # 🔍 Search Wikipedia
+        search_url = f"https://en.wikipedia.org/w/index.php?search={name.replace(' ', '+')}"
+        res = requests.get(search_url, headers=headers)
 
-soup = BeautifulSoup(res.text, "html.parser")
+        soup = BeautifulSoup(res.text, "html.parser")
 
-photos = []
+        # 🔥 Get first result link
+        result = soup.select_one(".mw-search-result-heading a")
 
-# Wikipedia tables
-tables = soup.find_all("table", {"class": "wikitable"})
+        if result:
+            link = "https://en.wikipedia.org" + result.get("href")
+        else:
+            # direct page fallback
+            link = f"https://en.wikipedia.org/wiki/{name.replace(' ', '_')}"
 
-for table in tables:
-    rows = table.find_all("tr")
+        # 🔍 Open MP page
+        res2 = requests.get(link, headers=headers)
+        soup2 = BeautifulSoup(res2.text, "html.parser")
 
-    for row in rows[1:]:
-        cols = row.find_all("td")
+        # 🎯 Extract infobox image
+        img = soup2.select_one(".infobox img")
 
-        if len(cols) < 2:
-            continue
+        if img:
+            src = img.get("src")
+            if src.startswith("//"):
+                return "https:" + src
 
-        # find image
-        img_tag = row.find("img")
+        return None
 
-        if img_tag:
-            img_url = img_tag.get("src")
+    except Exception as e:
+        return None
 
-            if img_url:
-                # convert to full URL
-                if img_url.startswith("//"):
-                    img_url = "https:" + img_url
 
-                photos.append(img_url)
+# 🚀 Loop through MPs
+for i, name in enumerate(mp_names):
+    print(f"[{i+1}] Fetching: {name}")
 
-# remove duplicates
-photos = list(set(photos))
+    img_url = get_wiki_image(name)
 
-# save
-with open("mp_photos.json", "w") as f:
-    json.dump(photos, f, indent=2)
+    results.append({
+        "name": name,
+        "photo": img_url
+    })
 
-print(f"✅ DONE: {len(photos)} photos saved")
+    time.sleep(1)  # avoid blocking
+
+# 💾 Save JSON
+with open("mp_photos.json", "w", encoding="utf-8") as f:
+    json.dump(results, f, indent=2)
+
+print("\n🔥 DONE! Saved mp_photos.json")
