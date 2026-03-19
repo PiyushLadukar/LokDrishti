@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, ReferenceLine, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  LineChart, Line, Area, AreaChart,
+  AreaChart, Area,
 } from "recharts";
 import {
   getStateStrength, getPartyDominance,
@@ -13,15 +13,29 @@ import {
 
 type Tab = "state" | "party" | "inequality" | "imbalance";
 
-/* ─── Animated counter ──────────────────────────────── */
-function Counter({ to, dec = 0, dur = 1600 }: { to: number; dec?: number; dur?: number }) {
+/* ── THEME ────────────────────────────────────────────────── */
+const T = {
+  bg:       "#F8F5F0",
+  bgCard:   "#FFFFFF",
+  bgDeep:   "#F2EDE6",
+  text:     "#1A1A2E",
+  textSub:  "#6B7280",
+  border:   "#E5DDD5",
+  orange:   "#FF6B00",
+  blue:     "#2563EB",
+  red:      "#DC2626",
+  green:    "#059669",
+  teal:     "#0891B2",
+};
+
+/* ── ANIMATED COUNTER ─────────────────────────────────────── */
+function Counter({ to, dec = 0 }: { to: number; dec?: number }) {
   const [v, setV] = useState(0);
-  const ref = useRef(false);
+  const done = useRef(false);
   useEffect(() => {
-    if (ref.current || !to) return;
-    ref.current = true;
-    let cur = 0;
-    const step = to / (dur / 14);
+    if (done.current || !to) return;
+    done.current = true;
+    let cur = 0; const step = to / (1200 / 14);
     const t = setInterval(() => {
       cur += step;
       if (cur >= to) { setV(to); clearInterval(t); } else setV(cur);
@@ -31,39 +45,190 @@ function Counter({ to, dec = 0, dur = 1600 }: { to: number; dec?: number; dur?: 
   return <>{v.toFixed(dec)}</>;
 }
 
-/* ─── Custom tooltip ────────────────────────────────── */
-function DarkTooltip({ active, payload, labelKey, valueKey, color }: any) {
+/* ── SCROLL REVEAL ────────────────────────────────────────── */
+function Reveal({ children, delay = 0, up = true }: { children: React.ReactNode; delay?: number; up?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [vis, setVis] = useState(false);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.08 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div ref={ref} style={{
+      opacity: vis ? 1 : 0,
+      transform: vis ? "translate(0,0)" : up ? "translateY(28px)" : "translateX(-20px)",
+      transition: `opacity 0.65s ease ${delay}ms, transform 0.65s cubic-bezier(0.4,0,0.2,1) ${delay}ms`,
+    }}>{children}</div>
+  );
+}
+
+/* ── CUSTOM TOOLTIP ───────────────────────────────────────── */
+function LightTooltip({ active, payload, labelKey, valueKey, color }: any) {
   if (!active || !payload?.length) return null;
   const d = payload[0]?.payload;
   const val = d?.[valueKey] ?? 0;
-  const grade = val >= 0.6 ? "A" : val >= 0.4 ? "B" : val >= 0.25 ? "C" : "D";
-  const gc = val >= 0.6 ? "#34D399" : val >= 0.4 ? "#FF6B00" : val >= 0.25 ? "#FBBF24" : "#F87171";
+  const pct = Math.round(val * 100);
+  const grade = pct >= 60 ? "A — Excellent" : pct >= 40 ? "B — Good" : pct >= 25 ? "C — Average" : "D — Below Avg";
+  const gc    = pct >= 60 ? T.green : pct >= 40 ? T.orange : pct >= 25 ? "#D97706" : T.red;
   return (
-    <div style={{ background: "rgba(6,14,26,0.97)", borderRadius: "10px", padding: "12px 16px", border: `1px solid ${color}30`, backdropFilter: "blur(8px)", minWidth: "160px" }}>
-      <div style={{ fontSize: "13px", fontWeight: 700, color: "white", marginBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)", paddingBottom: "7px" }}>{d?.[labelKey]}</div>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", marginBottom: "4px" }}>
-        <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)" }}>Score</span>
-        <span style={{ fontSize: "12px", fontWeight: 700, color }}>{val.toFixed(4)}</span>
+    <div style={{ background: "white", borderRadius: 14, padding: "14px 18px",
+      border: `1px solid ${color}30`,
+      boxShadow: "0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08)",
+      minWidth: 200 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 10,
+        borderBottom: `1px solid ${T.border}`, paddingBottom: 8,
+        fontFamily: "'DM Sans',sans-serif" }}>{d?.[labelKey]}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 6 }}>
+        <span style={{ fontSize: 12, color: T.textSub }}>Performance Score</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color, fontFamily: "'Cormorant Garamond',serif" }}>{val.toFixed(4)}</span>
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "16px" }}>
-        <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)" }}>Grade</span>
-        <span style={{ fontSize: "12px", fontWeight: 800, color: gc, background: `${gc}18`, padding: "1px 7px", borderRadius: "4px" }}>{grade}</span>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
+        <span style={{ fontSize: 12, color: T.textSub }}>Rating</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: gc,
+          background: `${gc}15`, padding: "2px 10px", borderRadius: 20 }}>{grade}</span>
       </div>
     </div>
   );
 }
 
-/* ─── Scrolling ticker ──────────────────────────────── */
+/* ── PULSE DOT ────────────────────────────────────────────── */
+function PulseDot({ color }: { color: string }) {
+  return (
+    <div style={{ position: "relative", width: 10, height: 10, flexShrink: 0 }}>
+      <div style={{ position: "absolute", inset: 0, borderRadius: "50%",
+        background: color, animation: "pingOut 2s ease-out infinite", opacity: 0.35 }}/>
+      <div style={{ position: "absolute", inset: 2, borderRadius: "50%", background: color }}/>
+    </div>
+  );
+}
+
+/* ── ANIMATED BAR ROW ─────────────────────────────────────── */
+function BarRow({ rank, name, val, max, color, i }: any) {
+  const [hov, setHov] = useState(false);
+  const [width, setWidth] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) setTimeout(() => setWidth((val / max) * 100), i * 50 + 100);
+    }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [val, max, i]);
+
+  const medals = ["🥇", "🥈", "🥉"];
+  const pct = Math.round((val / max) * 100);
+  const grade = pct >= 75 ? "A" : pct >= 50 ? "B" : pct >= 30 ? "C" : "D";
+  const gradeColor = pct >= 75 ? T.green : pct >= 50 ? T.orange : pct >= 30 ? "#D97706" : T.red;
+
+  return (
+    <div ref={ref}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 14, padding: "12px 16px",
+        borderRadius: 12, cursor: "default",
+        background: hov ? `${color}08` : "transparent",
+        border: `1px solid ${hov ? color + "30" : "transparent"}`,
+        transform: hov ? "translateX(4px)" : "translateX(0)",
+        transition: "all 0.22s cubic-bezier(0.4,0,0.2,1)",
+      }}>
+      {/* Rank */}
+      <div style={{ width: 28, textAlign: "center", flexShrink: 0 }}>
+        {rank <= 3
+          ? <span style={{ fontSize: 18 }}>{medals[rank - 1]}</span>
+          : <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15,
+              fontWeight: 700, color: "#CBD5E1" }}>{rank}</span>}
+      </div>
+      {/* Name + bar */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600,
+          color: hov ? color : T.text, transition: "color 0.2s",
+          marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {name}
+        </div>
+        <div style={{ height: 6, background: T.bgDeep, borderRadius: 3, overflow: "hidden" }}>
+          <div style={{
+            height: "100%", width: `${width}%`,
+            background: rank <= 3
+              ? `linear-gradient(90deg,${color},${color}cc)`
+              : `linear-gradient(90deg,${color}80,${color}50)`,
+            borderRadius: 3,
+            boxShadow: rank <= 3 ? `0 0 8px ${color}50` : "none",
+            transition: "width 1.1s cubic-bezier(0.4,0,0.2,1)",
+          }}/>
+        </div>
+      </div>
+      {/* Score */}
+      <div style={{ textAlign: "right", flexShrink: 0 }}>
+        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16,
+          fontWeight: 700, color: hov ? color : T.text, transition: "color 0.2s" }}>
+          {val.toFixed(3)}
+        </div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: gradeColor,
+          background: `${gradeColor}15`, padding: "1px 7px",
+          borderRadius: 10, display: "inline-block", marginTop: 2 }}>{grade}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── BIG STAT CARD ────────────────────────────────────────── */
+function BigStat({ label, emoji, value, sub, color, delay = 0 }: any) {
+  const [hov, setHov] = useState(false);
+  const [vis, setVis] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVis(true); }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div ref={ref}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        background: hov ? `linear-gradient(135deg,white,${color}06)` : "white",
+        borderRadius: 20, padding: "24px 22px",
+        borderTop: `4px solid ${color}`,
+        borderLeft: "1px solid #E5DDD5",
+        borderRight: "1px solid #E5DDD5",
+        borderBottom: "1px solid #E5DDD5",
+        boxShadow: hov
+          ? `0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px ${color}20`
+          : "0 2px 16px rgba(0,0,0,0.06)",
+        transform: hov ? "translateY(-4px)" : "translateY(0)",
+        transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+        opacity: vis ? 1 : 0,
+        transitionDelay: `${delay}ms`,
+        cursor: "default",
+      }}>
+      <div style={{ fontSize: 28, marginBottom: 10 }}>{emoji}</div>
+      <div style={{ fontSize: 10, fontWeight: 800, color: color,
+        textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: 8 }}>{label}</div>
+      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28,
+        fontWeight: 700, color: T.text, lineHeight: 1.1, marginBottom: 4 }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: T.textSub, marginTop: 6, lineHeight: 1.5 }}>{sub}</div>}
+    </div>
+  );
+}
+
+/* ── TICKER ───────────────────────────────────────────────── */
 function Ticker({ items, color }: { items: { label: string; val: string }[]; color: string }) {
   const doubled = [...items, ...items];
   return (
-    <div style={{ overflow: "hidden", whiteSpace: "nowrap", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "10px 0", background: "rgba(255,255,255,0.02)" }}>
+    <div style={{ overflow: "hidden", whiteSpace: "nowrap",
+      background: color + "08",
+      borderTop: `1px solid ${color}20`,
+      borderBottom: `1px solid ${color}20`,
+      padding: "10px 0" }}>
       <div style={{ display: "inline-block", animation: "scrollTicker 30s linear infinite" }}>
         {doubled.map((item, i) => (
-          <span key={i} style={{ marginRight: "40px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em" }}>
-            <span style={{ color: "rgba(255,255,255,0.3)" }}>{item.label}</span>
-            <span style={{ color, marginLeft: "8px", fontFamily: "'Cormorant Garamond',serif", fontSize: "13px", fontWeight: 700 }}>{item.val}</span>
-            <span style={{ color: "rgba(255,255,255,0.12)", marginLeft: "40px" }}>·</span>
+          <span key={i} style={{ marginRight: 48, fontSize: 12, fontWeight: 600 }}>
+            <span style={{ color: T.textSub }}>{item.label}</span>
+            <span style={{ color, marginLeft: 8,
+              fontFamily: "'Cormorant Garamond',serif", fontSize: 15, fontWeight: 700 }}>
+              {item.val}
+            </span>
+            <span style={{ color: T.border, marginLeft: 48 }}>·</span>
           </span>
         ))}
       </div>
@@ -71,31 +236,33 @@ function Ticker({ items, color }: { items: { label: string; val: string }[]; col
   );
 }
 
-/* ─── Floating stat card (overlaid on chart area) ───── */
-function StatFloat({ label, value, color, sub, style: s }: { label: string; value: string; color: string; sub?: string; style?: React.CSSProperties }) {
+/* ── EXPLAINER CHIP ───────────────────────────────────────── */
+function Chip({ text, color }: { text: string; color: string }) {
   return (
-    <div style={{
-      background: "rgba(6,14,26,0.88)", backdropFilter: "blur(12px)",
-      borderRadius: "12px", padding: "14px 18px",
-      border: `1px solid ${color}25`,
-      borderLeft: `3px solid ${color}`,
-      minWidth: "130px", ...s,
-    }}>
-      <div style={{ fontSize: "9px", fontWeight: 800, color: color, textTransform: "uppercase", letterSpacing: "0.16em", marginBottom: "5px" }}>{label}</div>
-      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "22px", fontWeight: 700, color: "white", lineHeight: 1 }}>{value}</div>
-      {sub && <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)", marginTop: "3px" }}>{sub}</div>}
-    </div>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6,
+      padding: "5px 12px", borderRadius: 100,
+      background: `${color}12`, border: `1px solid ${color}25`,
+      fontSize: 12, fontWeight: 600, color, whiteSpace: "nowrap" }}>
+      {text}
+    </span>
   );
 }
 
-/* ─── Main page ─────────────────────────────────────── */
+/* ══ MAIN PAGE ══════════════════════════════════════════════ */
 export default function AnalyticsPage() {
-  const [tab, setTab] = useState<Tab>("state");
-  const [cache, setCache] = useState<Record<string, any>>({});
+  const [tab, setTab]         = useState<Tab>("state");
+  const [cache, setCache]     = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"chart" | "radar" | "table">("chart");
-  const [copied, setCopied] = useState(false);
-  const [hoveredBar, setHoveredBar] = useState<string | null>(null);
+  const [copied, setCopied]   = useState(false);
+  const [hovBar, setHovBar]   = useState<string | null>(null);
+  const [vis, setVis]         = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setVis(true), 80);
+    const prev = parseInt(localStorage.getItem("ld_analytics") || "0");
+    localStorage.setItem("ld_analytics", String(prev + 1));
+  }, []);
 
   useEffect(() => { if (!cache[tab]) load(tab); }, [tab]);
 
@@ -103,64 +270,52 @@ export default function AnalyticsPage() {
     setLoading(true);
     try {
       const fns: Record<Tab, () => Promise<any>> = {
-        state: getStateStrength, party: getPartyDominance,
-        inequality: getInequality, imbalance: getImbalance,
+        state:      getStateStrength,
+        party:      getPartyDominance,
+        inequality: getInequality,
+        imbalance:  getImbalance,
       };
-      const res = await fns[t]();
-      setCache(p => ({ ...p, [t]: res }));
-    } catch { /* noop */ }
+      const result = await fns[t]();
+      setCache(p => ({ ...p, [t]: result }));
+    } catch (e) {
+      console.error("Analytics load error:", e);
+    }
     setLoading(false);
   }
 
-  const data = cache[tab];
-
-  const tabs: { key: Tab; label: string; short: string; color: string; icon: string; desc: string }[] = [
-    { key: "state",      label: "State Strength",   short: "STATE",   color: "#FF6B00", icon: "▲", desc: "Composite state-level parliamentary output" },
-    { key: "party",      label: "Party Dominance",  short: "PARTY",   color: "#60A5FA", icon: "◈", desc: "Inter-party performance divergence" },
-    { key: "inequality", label: "Inequality Index", short: "INEQUAL", color: "#F87171", icon: "⚡", desc: "MP performance spread within states" },
-    { key: "imbalance",  label: "Representation",   short: "IMBAL",   color: "#34D399", icon: "◉", desc: "Over / underperformance vs seat share" },
+  const tabs: { key: Tab; label: string; emoji: string; color: string; desc: string; explain: string }[] = [
+    { key: "state",      label: "State Report Card",    emoji: "🗺️", color: T.orange, desc: "How well each state performs",        explain: "Which state sends the most active MPs to Parliament?" },
+    { key: "party",      label: "Party Performance",    emoji: "🏛️", color: T.blue,   desc: "Which party works harder",            explain: "Do your party's MPs ask questions and attend sessions?" },
+    { key: "inequality", label: "Inequality Inside States", emoji:"⚖️",color:T.red,   desc: "Are MPs equal within a state?",       explain: "In some states, one MP does all the work while others sleep." },
+    { key: "imbalance",  label: "Fair Representation",  emoji: "📊", color: T.teal,   desc: "Performance vs seats won",            explain: "Do states perform proportionally to how many MPs they elect?" },
   ];
   const active = tabs.find(t => t.key === tab)!;
 
-  /* ── Derived data ── */
-  const getRows = (): { key: string; val: number }[] => {
-    if (!data?.data) return [];
-    if (tab === "state")      return data.data.map((d:any) => ({ key: d.state, val: d.state_strength_index }));
-    if (tab === "party")      return data.data.map((d:any) => ({ key: d.party, val: d.party_dominance_index }));
-    if (tab === "inequality") return data.data.map((d:any) => ({ key: d.state, val: d.performance_std }));
-    return data.data.map((d:any) => ({ key: d.state, val: d.imbalance_score }));
-  };
-  const rows = getRows().sort((a,b) => b.val - a.val);
-  const top15 = rows.slice(0, 15);
-  const avg = rows.length ? rows.reduce((s,r) => s + r.val, 0) / rows.length : 0;
-  const maxVal = rows[0]?.val || 1;
-
-  /* Color per bar */
-  const barColor = (val: number) => {
-    const r = val / maxVal;
-    if (r >= 0.75) return active.color;
-    if (r >= 0.5)  return active.color + "BB";
-    if (r >= 0.3)  return active.color + "77";
-    return active.color + "44";
+  const getRows = () => {
+    const d = cache[tab]?.data;
+    if (!d) return [];
+    if (tab === "state")      return d.map((x:any) => ({ key: x.state, val: x.state_strength_index }));
+    if (tab === "party")      return d.map((x:any) => ({ key: x.party, val: x.party_dominance_index }));
+    if (tab === "inequality") return d.map((x:any) => ({ key: x.state, val: x.performance_std }));
+    return                         d.map((x:any) => ({ key: x.state, val: x.imbalance_score }));
   };
 
-  /* Ticker items */
-  const tickerItems = rows.slice(0, 20).map(r => ({ label: r.key, val: r.val.toFixed(3) }));
-
-  /* Radar data (top 6) */
-  const radarData = top15.slice(0, 6).map(r => ({ subject: r.key.length > 8 ? r.key.slice(0,8)+"…" : r.key, value: r.val, fullMark: maxVal }));
-
-  /* Summary stats */
+  const data    = cache[tab];
+  const rows    = getRows().sort((a,b) => b.val - a.val);
+  const top15   = rows.slice(0, 15);
+  const avg     = rows.length ? rows.reduce((s,r) => s + r.val, 0) / rows.length : 0;
+  const maxVal  = rows[0]?.val || 1;
   const leader  = rows[0];
   const laggard = rows[rows.length - 1];
+  const ticker  = rows.slice(0, 20).map(r => ({ label: r.key, val: r.val.toFixed(3) }));
+  const radarD  = top15.slice(0,6).map(r => ({ subject: r.key.length > 8 ? r.key.slice(0,7)+"…" : r.key, value: r.val, fullMark: maxVal }));
 
-  /* Insight */
   const insight = (() => {
     if (!leader) return "";
-    if (tab === "state") return `${leader.key} leads at ${(leader.val / avg).toFixed(1)}× national average`;
-    if (tab === "party") return `${leader.key} dominates with ${((leader.val - laggard.val) / laggard.val * 100).toFixed(0)}% gap`;
-    if (tab === "inequality") return `${leader.key} has the most unequal MP distribution`;
-    return `${data?.most_overperforming_state} exceeds expectations vs seat share`;
+    if (tab === "state")      return `${leader.key} sends the most active MPs — ${(leader.val/avg).toFixed(1)}× better than average`;
+    if (tab === "party")      return `${leader.key} leads with the most parliamentary participation`;
+    if (tab === "inequality") return `Inside ${leader.key}, MPs vary widely — one active, rest missing`;
+    return `${data?.most_overperforming_state ?? "—"} punches above its weight vs seats`;
   })();
 
   const share = () => {
@@ -168,301 +323,556 @@ export default function AnalyticsPage() {
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
 
-  /* ── Render chart ── */
-  const renderChart = () => (
-    <div style={{ position: "relative" }}>
-      {/* Floating stat overlays */}
-      <div style={{ position: "absolute", top: "16px", right: "16px", display: "flex", flexDirection: "column", gap: "8px", zIndex: 10 }}>
-        {leader && <StatFloat label="Leader" value={leader.key} color={active.color} sub={leader.val.toFixed(4)} />}
-        {laggard && <StatFloat label="Laggard" value={laggard.key} color="#F87171" sub={laggard.val.toFixed(4)} />}
-        <StatFloat label="Nat'l Avg" value={avg.toFixed(3)} color="#8A9AB0" sub={`${rows.length} entries`} />
-      </div>
+  /* Context cards */
+  const ctxCards = data && !loading ? (
+    tab === "state" ? [
+      { label:"Best State", emoji:"🏆", value:data.strongest_state, sub:"Most active MPs",  color:T.green },
+      { label:"Needs Work", emoji:"⚠️", value:data.weakest_state,   sub:"Least active MPs", color:T.red   },
+      { label:"States Tracked",emoji:"📍",value:String(data.total_states), sub:"Across India",color:T.orange},
+      { label:"Avg Score",  emoji:"📊", value:avg.toFixed(3), sub:"National benchmark",   color:T.blue  },
+    ] : tab === "party" ? [
+      { label:"Top Party",  emoji:"🏆", value:data.dominant_party,   sub:"Most productive", color:T.green },
+      { label:"Lagging",    emoji:"⚠️", value:data.weakest_party,    sub:"Low participation",color:T.red  },
+      { label:"Parties",    emoji:"🏛️", value:String(data.total_parties), sub:"Analysed",   color:T.orange},
+      { label:"Avg Score",  emoji:"📊", value:avg.toFixed(3),         sub:"Across parties",  color:T.blue  },
+    ] : tab === "inequality" ? [
+      { label:"Most Unequal",emoji:"😟", value:data.most_unequal_state,  sub:"MPs vary widely",    color:T.red    },
+      { label:"Most Equal",  emoji:"✅", value:data.most_balanced_state,  sub:"All MPs work equally",color:T.green },
+      { label:"Avg Gap",     emoji:"📏", value:avg.toFixed(4), sub:"Inequality score", color:T.orange },
+    ] : [
+      { label:"Over-achiever",emoji:"🚀",value:data.most_overperforming_state,sub:"More than their share",color:T.green},
+      { label:"Under-deliver",emoji:"📉",value:data.most_underperforming_state,sub:"Less than their share",color:T.red },
+      { label:"Avg LCI",     emoji:"📊", value:data.national_avg_lci?.toFixed(4)||"—",sub:"Baseline score",color:T.blue},
+    ]
+  ) : [];
 
-      <div style={{ height: "400px", paddingRight: "170px" }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={top15.map(r => ({ ...r, [tab]: r.val }))} margin={{ top: 12, right: 8, bottom: 52, left: 0 }} barCategoryGap="28%">
-            <defs>
-              <linearGradient id={`grad_${tab}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={active.color} stopOpacity={1} />
-                <stop offset="100%" stopColor={active.color} stopOpacity={0.5} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="1 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-            <XAxis dataKey="key" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.35)", fontFamily: "'DM Sans'" }} angle={-30} textAnchor="end" interval={0} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "rgba(255,255,255,0.25)" }} axisLine={false} tickLine={false} tickFormatter={v => v.toFixed(2)} width={36} />
-            <Tooltip content={<DarkTooltip labelKey="key" valueKey={tab} color={active.color} />} cursor={{ fill: "rgba(255,255,255,0.03)", radius: 4 }} />
-            <ReferenceLine y={avg} stroke="rgba(255,255,255,0.2)" strokeDasharray="4 4" strokeWidth={1.5}
-              label={{ value: `avg`, position: "insideTopLeft", fill: "rgba(255,255,255,0.25)", fontSize: 9 }} />
-            <Bar dataKey={tab} radius={[5,5,0,0]} maxBarSize={32}
-              onMouseEnter={(d:any) => setHoveredBar(d.key)}
-              onMouseLeave={() => setHoveredBar(null)}>
-              {top15.map(r => (
-                <Cell key={r.key}
-                  fill={hoveredBar === r.key ? active.color : `url(#grad_${tab})`}
-                  opacity={hoveredBar && hoveredBar !== r.key ? 0.4 : 1}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+  /* ── CHART ── */
+  const renderChart = () => (
+    <div style={{ height: 400 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={top15.map(r => ({...r,[tab]:r.val}))}
+          margin={{ top:12, right:16, bottom:60, left:0 }} barCategoryGap="32%">
+          <defs>
+            <linearGradient id={`g_${tab}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor={active.color} stopOpacity={1}/>
+              <stop offset="100%" stopColor={active.color} stopOpacity={0.4}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="2 6" stroke={T.border} vertical={false}/>
+          <XAxis dataKey="key"
+            tick={{ fontSize:11, fill:T.textSub, fontFamily:"'DM Sans'" }}
+            angle={-35} textAnchor="end" interval={0}
+            axisLine={false} tickLine={false}/>
+          <YAxis tick={{ fontSize:11, fill:T.textSub }}
+            axisLine={false} tickLine={false}
+            tickFormatter={v=>v.toFixed(2)} width={40}/>
+          <Tooltip
+            content={<LightTooltip labelKey="key" valueKey={tab} color={active.color}/>}
+            cursor={{ fill:`${active.color}06`, radius:6 }}/>
+          <ReferenceLine y={avg} stroke={active.color} strokeDasharray="6 4" strokeWidth={1.5}
+            label={{ value:"National Avg", position:"insideTopLeft",
+              fill:active.color, fontSize:10, fontWeight:700 }}/>
+          <Bar dataKey={tab} radius={[8,8,0,0]} maxBarSize={38}
+            onMouseEnter={(d:any)=>setHovBar(d.key)}
+            onMouseLeave={()=>setHovBar(null)}>
+            {top15.map(r=>(
+              <Cell key={r.key}
+                fill={hovBar===r.key ? active.color : `url(#g_${tab})`}
+                opacity={hovBar && hovBar!==r.key ? 0.35 : 1}
+                style={{ filter:hovBar===r.key?`drop-shadow(0 4px 12px ${active.color}50)`:"none" }}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 
-  /* ── Render radar ── */
+  /* ── RADAR ── */
   const renderRadar = () => (
-    <div style={{ height: "400px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ height: 400 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={radarData} margin={{ top: 20, right: 40, bottom: 20, left: 40 }}>
-          <PolarGrid stroke="rgba(255,255,255,0.08)" />
-          <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)", fontFamily: "'DM Sans'" }} />
-          <PolarRadiusAxis tick={false} axisLine={false} />
-          <Radar name="Score" dataKey="value" stroke={active.color} fill={active.color} fillOpacity={0.15} strokeWidth={2} />
-          <Tooltip content={<DarkTooltip labelKey="subject" valueKey="value" color={active.color} />} />
+        <RadarChart data={radarD} margin={{ top:24, right:52, bottom:24, left:52 }}>
+          <PolarGrid stroke={T.border}/>
+          <PolarAngleAxis dataKey="subject"
+            tick={{ fontSize:12, fill:T.textSub, fontFamily:"'DM Sans'" }}/>
+          <PolarRadiusAxis tick={false} axisLine={false}/>
+          <Radar dataKey="value" stroke={active.color}
+            fill={active.color} fillOpacity={0.18} strokeWidth={2.5}/>
+          <Tooltip content={<LightTooltip labelKey="subject" valueKey="value" color={active.color}/>}/>
         </RadarChart>
       </ResponsiveContainer>
     </div>
   );
 
-  /* ── Render table ── */
+  /* ── TABLE ── */
   const renderTable = () => (
-    <div style={{ maxHeight: "460px", overflowY: "auto" }}>
+    <div style={{ maxHeight:480, overflowY:"auto" }}>
       {rows.map((r, i) => {
-        const pct = Math.abs(r.val) / maxVal * 100;
-        const gc = pct >= 75 ? "#34D399" : pct >= 50 ? "#FF6B00" : pct >= 30 ? "#FBBF24" : "#F87171";
-        const grade = pct >= 75 ? "A" : pct >= 50 ? "B" : pct >= 30 ? "C" : "D";
+        const pct = Math.round((r.val/maxVal)*100);
+        const gc  = pct>=75?T.green:pct>=50?T.orange:pct>=30?"#D97706":T.red;
+        const grade = pct>=75?"A":pct>=50?"B":pct>=30?"C":"D";
+        const explain = pct>=75?"Excellent":pct>=50?"Good":pct>=30?"Average":"Needs Attention";
         return (
           <div key={r.key} style={{
-            display: "grid", gridTemplateColumns: "36px 1fr 120px 64px 32px",
-            alignItems: "center", gap: "12px",
-            padding: "12px 20px",
-            borderBottom: "1px solid rgba(255,255,255,0.04)",
-            background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)",
+            display:"grid", gridTemplateColumns:"44px 1fr 120px 64px 110px",
+            alignItems:"center", gap:12, padding:"12px 20px",
+            borderBottom:`1px solid ${T.border}`,
+            background:i%2===0?"white":`${T.bgDeep}`,
           }}>
-            <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "16px", fontWeight: 700, color: i < 3 ? ["#FFD700","#C0C0C0","#CD7F32"][i] : "rgba(255,255,255,0.15)" }}>{i+1}</span>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>{r.key}</span>
-            <div style={{ height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg,${gc},${gc}aa)`, borderRadius: "2px" }} />
+            <span style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:17, fontWeight:700,
+              color:i<3?["#F59E0B","#94A3B8","#CD7F32"][i]:"#CBD5E1" }}>{i+1}</span>
+            <span style={{ fontSize:13, fontWeight:600, color:T.text }}>{r.key}</span>
+            <div style={{ height:6, background:T.bgDeep, borderRadius:3, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:`${pct}%`, background:gc, borderRadius:3 }}/>
             </div>
-            <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "15px", fontWeight: 700, color: active.color, textAlign: "right" }}>{r.val.toFixed(4)}</span>
-            <span style={{ fontSize: "11px", fontWeight: 800, color: gc, background: `${gc}15`, borderRadius: "5px", padding: "2px 6px", textAlign: "center" }}>{grade}</span>
+            <span style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:16,
+              fontWeight:700, color:active.color, textAlign:"right" }}>{r.val.toFixed(4)}</span>
+            <span style={{ fontSize:11, fontWeight:700, color:gc,
+              background:`${gc}15`, padding:"3px 10px", borderRadius:20,
+              textAlign:"center" }}>{grade} · {explain}</span>
           </div>
         );
       })}
     </div>
   );
 
-  return (
-    <div style={{ minHeight: "100vh", fontFamily: "'DM Sans',sans-serif", background: "#060E1A", color: "white" }}>
+  const fadeIn = (d: number): React.CSSProperties => ({
+    opacity: vis ? 1 : 0,
+    transform: vis ? "translateY(0)" : "translateY(20px)",
+    transition: `opacity 0.65s ease ${d}ms, transform 0.65s cubic-bezier(0.4,0,0.2,1) ${d}ms`,
+  });
 
-      {/* ══ TOP NAVIGATION RAIL ══════════════════════════ */}
-      <div style={{ background: "#060E1A", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "0 48px", position: "sticky", top: "62px", zIndex: 50 }}>
-        <div style={{ display: "flex", alignItems: "stretch", gap: "0", maxWidth: "1280px", margin: "0 auto" }}>
+  return (
+    <div style={{ minHeight:"100vh", fontFamily:"'DM Sans',sans-serif",
+      background:T.bg, color:T.text, overflowX:"hidden" }}>
+
+      <style>{`
+        @keyframes spin         { to{transform:rotate(360deg)} }
+        @keyframes pingOut      { 0%{transform:scale(1);opacity:0.6} 100%{transform:scale(2.8);opacity:0} }
+        @keyframes scrollTicker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+        @keyframes blink        { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes floatUp      { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        @keyframes shimmerScan  { 0%{left:-60%} 100%{left:120%} }
+        @keyframes gradShift    { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+        *,*::before,*::after { box-sizing:border-box; }
+        ::selection { background: rgba(255,107,0,0.2); }
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-track { background:#F0EAE0; }
+        ::-webkit-scrollbar-thumb { background:#D4CAC0; border-radius:3px; }
+
+        .tab-pill { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); }
+        .tab-pill:hover { transform: translateY(-1px); }
+        .view-pill { transition: all 0.18s; }
+        .view-pill:hover { transform: scale(1.02); }
+      `}</style>
+
+      {/* ── TOP HERO HEADER ── */}
+      <div style={{
+        background:"linear-gradient(135deg,#0A1628 0%,#1E293B 60%,#0F172A 100%)",
+        padding:"0 0 0 0", position:"relative", overflow:"hidden",
+      }}>
+        {/* Tricolor top stripe */}
+        <div style={{ height:3, background:"linear-gradient(90deg,#FF6B00 33%,white 33%,white 66%,#138808 66%)" }}/>
+
+        {/* Dot grid */}
+        <div style={{ position:"absolute", inset:0, pointerEvents:"none",
+          backgroundImage:"radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px)",
+          backgroundSize:"24px 24px" }}/>
+
+        {/* Orange glow */}
+        <div style={{ position:"absolute", left:"-5%", top:"50%", transform:"translateY(-50%)",
+          width:500, height:500, borderRadius:"50%",
+          background:"radial-gradient(circle,rgba(255,107,0,0.15) 0%,transparent 70%)",
+          animation:"floatUp 7s ease-in-out infinite", pointerEvents:"none" }}/>
+
+        <div style={{ maxWidth:1280, margin:"0 auto", padding:"36px 48px 44px", position:"relative", zIndex:1 }}>
+          {/* Eyebrow */}
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16, ...fadeIn(0) }}>
+            <div style={{ width:3, height:16, background:"#FF6B00", borderRadius:2 }}/>
+            <span style={{ fontSize:10, fontWeight:800, color:"rgba(255,255,255,0.5)",
+              textTransform:"uppercase", letterSpacing:"0.22em" }}>
+              18th Lok Sabha · Parliament of India · Open Data
+            </span>
+          </div>
+
+          <div style={{ display:"flex", justifyContent:"space-between",
+            alignItems:"flex-end", flexWrap:"wrap", gap:24 }}>
+            <div style={{ ...fadeIn(60) }}>
+              <h1 style={{ fontFamily:"'Cormorant Garamond',serif",
+                fontSize:"clamp(36px,4.5vw,64px)", fontWeight:700,
+                color:"white", letterSpacing:"-2px", lineHeight:1, marginBottom:12 }}>
+                Parliamentary{" "}
+                <em style={{ color:"#FF6B00" }}>Analytics</em>
+              </h1>
+              <p style={{ fontSize:15, color:"rgba(255,255,255,0.45)",
+                maxWidth:520, lineHeight:1.75 }}>
+                Raw data from PRS Legislative Research. See exactly how your state, party, and
+                representative performs in Parliament — no spin, no opinion.
+              </p>
+            </div>
+            {/* Live badge */}
+            <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 20px",
+              background:"rgba(255,255,255,0.06)", borderRadius:100,
+              border:"1px solid rgba(255,255,255,0.12)", ...fadeIn(120) }}>
+              <PulseDot color="#22C55E"/>
+              <span style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.7)" }}>
+                Live · 18th Lok Sabha
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── TAB RAIL ── */}
+      <div style={{ background:"white", borderBottom:`1px solid ${T.border}`,
+        position:"sticky", top:62, zIndex:50,
+        boxShadow:"0 2px 16px rgba(0,0,0,0.06)", ...fadeIn(0) }}>
+        <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 48px",
+          display:"flex", alignItems:"stretch" }}>
           {tabs.map(t => {
-            const on = tab === t.key;
+            const on = tab===t.key;
             return (
-              <button key={t.key} onClick={() => setTab(t.key)} style={{
-                display: "flex", flexDirection: "column", alignItems: "flex-start",
-                padding: "16px 24px", border: "none", cursor: "pointer",
-                background: "transparent",
-                borderBottom: on ? `2px solid ${t.color}` : "2px solid transparent",
-                transition: "all 0.18s",
-                fontFamily: "'DM Sans',sans-serif",
-                minWidth: "160px",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "3px" }}>
-                  <span style={{ fontSize: "14px", color: on ? t.color : "rgba(255,255,255,0.2)", transition: "color 0.18s" }}>{t.icon}</span>
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: on ? "white" : "rgba(255,255,255,0.35)", transition: "color 0.18s" }}>{t.label}</span>
+              <button key={t.key} onClick={()=>setTab(t.key)}
+                className="tab-pill"
+                style={{ display:"flex", flexDirection:"column", alignItems:"flex-start",
+                  padding:"14px 22px", border:"none", cursor:"pointer", background:"transparent",
+                  borderBottom:`3px solid ${on ? t.color : "transparent"}`,
+                  position:"relative", minWidth:185 }}>
+                {/* Animated underline fill */}
+                {on && <div style={{ position:"absolute", bottom:0, left:0, right:0, height:3,
+                  background:`linear-gradient(90deg,${t.color},${t.color}60)`,
+                  borderRadius:"3px 3px 0 0",
+                  overflow:"hidden" }}>
+                  <div style={{ position:"absolute", top:0, bottom:0, width:"50%",
+                    background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.5),transparent)",
+                    animation:"shimmerScan 1.8s ease-in-out infinite" }}/>
+                </div>}
+                <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:3 }}>
+                  <span style={{ fontSize:16 }}>{t.emoji}</span>
+                  <span style={{ fontSize:13, fontWeight:700,
+                    color: on ? T.text : T.textSub }}>{t.label}</span>
                 </div>
-                <span style={{ fontSize: "10px", color: on ? t.color : "rgba(255,255,255,0.18)", transition: "color 0.18s" }}>{t.desc}</span>
+                <span style={{ fontSize:10.5, color: on ? t.color : "#CBD5E1",
+                  fontWeight:600, transition:"color 0.2s" }}>{t.desc}</span>
               </button>
             );
           })}
-
           {/* Right controls */}
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
-            {/* View mode */}
-            <div style={{ display: "flex", background: "rgba(255,255,255,0.04)", borderRadius: "8px", padding: "3px", border: "1px solid rgba(255,255,255,0.07)" }}>
-              {(["chart","radar","table"] as const).map(v => (
-                <button key={v} onClick={() => setViewMode(v)} style={{
-                  padding: "5px 12px", borderRadius: "6px", border: "none", cursor: "pointer",
-                  background: viewMode===v ? "rgba(255,255,255,0.1)" : "transparent",
-                  color: viewMode===v ? "white" : "rgba(255,255,255,0.3)",
-                  fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
-                  fontFamily: "'DM Sans',sans-serif",
-                }}>{v}</button>
+          <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ display:"flex", background:T.bgDeep, borderRadius:10,
+              padding:3, border:`1px solid ${T.border}` }}>
+              {(["chart","radar","table"] as const).map(v=>(
+                <button key={v} className="view-pill" onClick={()=>setViewMode(v)}
+                  style={{ padding:"6px 14px", borderRadius:8, border:"none", cursor:"pointer",
+                    background:viewMode===v?"white":"transparent",
+                    color:viewMode===v?active.color:T.textSub,
+                    fontSize:10.5, fontWeight:700, textTransform:"uppercase",
+                    letterSpacing:"0.1em", fontFamily:"'DM Sans',sans-serif",
+                    boxShadow:viewMode===v?"0 2px 8px rgba(0,0,0,0.1)":"none",
+                    transition:"all 0.18s" }}>
+                  {v==="chart"?"📊 Chart":v==="radar"?"🕸 Radar":"📋 Table"}
+                </button>
               ))}
             </div>
-            <button onClick={share} style={{ padding: "8px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "8px", cursor: "pointer", fontSize: "10px", fontWeight: 700, color: copied ? "#34D399" : "rgba(255,255,255,0.4)", fontFamily: "'DM Sans',sans-serif" }}>
-              {copied ? "✓" : "↗"}
+            <button onClick={share} style={{ padding:"8px 16px",
+              background:copied?`${T.green}12`:`${T.orange}10`,
+              borderLeft:`1px solid ${T.border}`, borderRight:`1px solid ${T.border}`,
+              borderTop:`1px solid ${T.border}`, borderBottom:`1px solid ${T.border}`,
+              borderRadius:10, cursor:"pointer", fontSize:11, fontWeight:700,
+              color:copied?T.green:T.orange, fontFamily:"'DM Sans',sans-serif",
+              transition:"all 0.2s" }}>
+              {copied?"✓ Copied":"↗ Share"}
             </button>
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 48px 60px" }}>
+      {/* ── BODY ── */}
+      <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 48px 80px" }}>
 
-        {/* ══ PAGE HEADER ════════════════════════════════ */}
-        <div style={{ padding: "40px 0 32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "1px solid rgba(255,255,255,0.05)", marginBottom: "32px" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-              <div style={{ width: "14px", height: "2px", background: active.color, borderRadius: "1px" }} />
-              <span style={{ fontSize: "10px", fontWeight: 800, color: active.color, textTransform: "uppercase", letterSpacing: "0.2em" }}>18th Lok Sabha · PRS Legislative Research</span>
-            </div>
-            <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(32px,3.5vw,52px)", fontWeight: 700, color: "white", letterSpacing: "-1px", lineHeight: 1.0, marginBottom: "8px" }}>
-              {active.label}
-            </h1>
-            {data && !loading && insight && (
-              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.38)", display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ color: active.color }}>↑</span> {insight}
-              </p>
-            )}
-          </div>
-
-          {/* Summary numbers — inline, horizontal */}
-          {data && !loading && (
-            <div style={{ display: "flex", gap: "32px", alignItems: "flex-end" }}>
-              {(tab === "state" ? [
-                { l: "States", v: String(data.total_states), color: "rgba(255,255,255,0.7)", isN: true },
-                { l: "Leader", v: data.strongest_state, color: "#34D399" },
-                { l: "Laggard", v: data.weakest_state, color: "#F87171" },
-              ] : tab === "party" ? [
-                { l: "Parties", v: String(data.total_parties), color: "rgba(255,255,255,0.7)", isN: true },
-                { l: "Dominant", v: data.dominant_party, color: "#34D399" },
-                { l: "Weakest", v: data.weakest_party, color: "#F87171" },
-              ] : tab === "inequality" ? [
-                { l: "Most Unequal", v: data.most_unequal_state, color: "#F87171" },
-                { l: "Most Balanced", v: data.most_balanced_state, color: "#34D399" },
-              ] : [
-                { l: "Avg LCI", v: data.national_avg_lci?.toFixed(4), color: "#60A5FA" },
-                { l: "Over", v: data.most_overperforming_state, color: "#34D399" },
-                { l: "Under", v: data.most_underperforming_state, color: "#F87171" },
-              ]).map((c: any) => (
-                <div key={c.l} style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "4px" }}>{c.l}</div>
-                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "22px", fontWeight: 700, color: c.color, lineHeight: 1 }}>
-                    {c.isN ? <Counter to={Number(c.v)} /> : c.v}
-                  </div>
+        {/* ── SECTION HEADER ── */}
+        <div style={{ padding:"40px 0 28px", borderBottom:`1px solid ${T.border}`,
+          marginBottom:28, ...fadeIn(80) }}>
+          <div style={{ display:"flex", justifyContent:"space-between",
+            alignItems:"flex-end", flexWrap:"wrap", gap:16 }}>
+            <div>
+              {/* Big question this section answers */}
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                <span style={{ fontSize:28 }}>{active.emoji}</span>
+                <h2 style={{ fontFamily:"'Cormorant Garamond',serif",
+                  fontSize:"clamp(24px,3vw,40px)", fontWeight:700,
+                  color:T.text, letterSpacing:"-0.5px", margin:0 }}>
+                  {active.label}
+                </h2>
+              </div>
+              {/* Plain English explainer */}
+              <div style={{ display:"flex", alignItems:"center", gap:10,
+                padding:"10px 16px", borderRadius:12,
+                background:`${active.color}08`,
+                border:`1px solid ${active.color}20`,
+                marginBottom:12, maxWidth:600 }}>
+                <span style={{ fontSize:16 }}>💬</span>
+                <span style={{ fontSize:13, color:T.text, lineHeight:1.6 }}>
+                  <strong>In plain English:</strong> {active.explain}
+                </span>
+              </div>
+              {/* Insight chip */}
+              {data && !loading && insight && (
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <PulseDot color={active.color}/>
+                  <span style={{ fontSize:13, color:T.textSub, fontStyle:"italic" }}>{insight}</span>
                 </div>
-              ))}
+              )}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* ══ LOADING ════════════════════════════════════ */}
+        {/* ── LOADING ── */}
         {loading && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "100px 0", gap: "16px" }}>
-            <div style={{ width: "36px", height: "36px", border: `3px solid ${active.color}20`, borderTop: `3px solid ${active.color}`, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-            <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)" }}>Connecting to data…</span>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center",
+            padding:"100px 0", gap:20 }}>
+            <div style={{ position:"relative", width:56, height:56 }}>
+              <div style={{ position:"absolute", inset:0, borderRadius:"50%",
+                border:`3px solid ${active.color}20`,
+                borderTop:`3px solid ${active.color}`,
+                animation:"spin 0.85s linear infinite" }}/>
+              <div style={{ position:"absolute", inset:10, borderRadius:"50%",
+                border:`2px solid ${T.border}`,
+                borderBottom:`2px solid ${active.color}80`,
+                animation:"spin 1.3s linear infinite reverse" }}/>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:14, fontWeight:600, color:T.text, marginBottom:4 }}>
+                Fetching parliamentary data…
+              </div>
+              <div style={{ fontSize:12, color:T.textSub }}>
+                18th Lok Sabha · PRS Legislative Research
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ══ CONTENT ════════════════════════════════════ */}
+        {/* ── CONTENT ── */}
         {data && !loading && (
           <>
-            {/* Scrolling ticker */}
-            {tickerItems.length > 0 && <Ticker items={tickerItems} color={active.color} />}
+            {/* Context cards */}
+            {ctxCards.length > 0 && (
+              <div style={{ display:"grid",
+                gridTemplateColumns:`repeat(${ctxCards.length},1fr)`,
+                gap:14, marginBottom:24 }}>
+                {(ctxCards as any[]).map((c,i)=>(
+                  <Reveal key={c.label} delay={i*70}>
+                    <BigStat {...c} delay={i*70}/>
+                  </Reveal>
+                ))}
+              </div>
+            )}
 
-            {/* Main chart card */}
-            <div style={{
-              marginTop: "20px",
-              background: "rgba(255,255,255,0.03)",
-              borderRadius: "20px",
-              border: "1px solid rgba(255,255,255,0.07)",
-              overflow: "hidden",
-              boxShadow: `0 0 80px ${active.color}08`,
-            }}>
-              {/* Chart header strip */}
-              <div style={{ padding: "18px 24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.02)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: active.color, boxShadow: `0 0 8px ${active.color}` }} />
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>
-                    {viewMode === "chart" ? `Top ${top15.length} of ${rows.length}` : viewMode === "radar" ? `Top 6 Radar View` : `All ${rows.length} entries`}
-                  </span>
-                  <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.2)" }}>·</span>
-                  <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.25)" }}>{active.desc}</span>
+            {/* Ticker */}
+            <Reveal delay={160}>
+              <Ticker items={ticker} color={active.color}/>
+            </Reveal>
+
+            {/* ── MAIN CHART CARD ── */}
+            <Reveal delay={220}>
+              <div style={{ marginTop:20, borderRadius:22, background:"white",
+                borderLeft:`1px solid ${T.border}`,
+                borderRight:`1px solid ${T.border}`,
+                borderBottom:`1px solid ${T.border}`,
+                borderTop:`3px solid ${active.color}`,
+                boxShadow:"0 4px 32px rgba(0,0,0,0.07)",
+                overflow:"hidden" }}>
+
+                {/* Chart header */}
+                <div style={{ padding:"16px 24px",
+                  borderBottom:`1px solid ${T.border}`,
+                  display:"flex", justifyContent:"space-between", alignItems:"center",
+                  background:T.bgDeep }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                    <PulseDot color={active.color}/>
+                    <span style={{ fontSize:13, fontWeight:700, color:T.text }}>
+                      {viewMode==="chart"?`Top ${top15.length} of ${rows.length} — ${active.label}`:
+                       viewMode==="radar"?"Top 6 — Radar Comparison":
+                       `All ${rows.length} entries — Full List`}
+                    </span>
+                  </div>
+                  <div style={{ display:"flex", gap:10 }}>
+                    {[
+                      { c:active.color,     l:"High performer"  },
+                      { c:active.color+"80",l:"Average"         },
+                      { c:active.color+"40",l:"Below average"   },
+                    ].map(x=>(
+                      <Chip key={x.l} text={x.l} color={active.color}/>
+                    ))}
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: "16px" }}>
-                  {[{ c: active.color, l: "High" }, { c: active.color+"88", l: "Mid" }, { c: active.color+"44", l: "Low" }].map(x => (
-                    <div key={x.l} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                      <div style={{ width: "8px", height: "8px", borderRadius: "2px", background: x.c }} />
-                      <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>{x.l}</span>
+
+                <div style={{ padding:"20px 20px 8px" }}>
+                  {viewMode==="chart" && renderChart()}
+                  {viewMode==="radar" && renderRadar()}
+                  {viewMode==="table" && renderTable()}
+                </div>
+
+                {/* Bottom stats bar */}
+                <div style={{ padding:"12px 24px",
+                  borderTop:`1px solid ${T.border}`,
+                  background:T.bgDeep,
+                  display:"flex", gap:28, flexWrap:"wrap" }}>
+                  {[
+                    { l:"National Average", v:avg.toFixed(4),                          c:active.color },
+                    { l:"Top Score",        v:leader?.val.toFixed(4),                  c:T.green      },
+                    { l:"Lowest Score",     v:laggard?.val.toFixed(4),                 c:T.red        },
+                    { l:"Total Range",      v:((leader?.val??0)-(laggard?.val??0)).toFixed(4), c:T.textSub },
+                  ].map(s=>(
+                    <div key={s.l} style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                      <span style={{ fontSize:9.5, fontWeight:700, color:T.textSub,
+                        textTransform:"uppercase", letterSpacing:"0.12em" }}>{s.l}</span>
+                      <span style={{ fontFamily:"'Cormorant Garamond',serif",
+                        fontSize:18, fontWeight:700, color:s.c }}>{s.v}</span>
                     </div>
                   ))}
                 </div>
               </div>
+            </Reveal>
 
-              <div style={{ padding: "20px 20px 8px" }}>
-                {viewMode === "chart" && renderChart()}
-                {viewMode === "radar" && renderRadar()}
-                {viewMode === "table" && renderTable()}
-              </div>
+            {/* ── TOP 5 / BOTTOM 5 ── */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr",
+              gap:16, marginTop:16 }}>
 
-              {/* Bottom strip */}
-              <div style={{ padding: "12px 24px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", gap: "24px", background: "rgba(0,0,0,0.2)" }}>
-                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.2)" }}>Avg <strong style={{ color: active.color }}>{avg.toFixed(4)}</strong></span>
-                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.2)" }}>Peak <strong style={{ color: "#34D399" }}>{leader?.val.toFixed(4)}</strong></span>
-                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.2)" }}>Floor <strong style={{ color: "#F87171" }}>{laggard?.val.toFixed(4)}</strong></span>
-                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.2)" }}>Gap <strong style={{ color: "rgba(255,255,255,0.5)" }}>{((leader?.val ?? 0) - (laggard?.val ?? 0)).toFixed(4)}</strong></span>
-              </div>
+              <Reveal delay={280}>
+                <div style={{ borderRadius:20, background:"white",
+                  border:`1px solid ${T.border}`,
+                  borderTop:`3px solid ${active.color}`,
+                  boxShadow:"0 2px 16px rgba(0,0,0,0.05)", overflow:"hidden" }}>
+                  <div style={{ padding:"16px 20px", borderBottom:`1px solid ${T.border}`,
+                    display:"flex", alignItems:"center", gap:8, background:T.bgDeep }}>
+                    <span style={{ fontSize:16 }}>🏆</span>
+                    <span style={{ fontSize:12, fontWeight:800, color:T.textSub,
+                      textTransform:"uppercase", letterSpacing:"0.14em" }}>Top 5 Performers</span>
+                  </div>
+                  <div style={{ padding:"8px 8px" }}>
+                    {rows.slice(0,5).map((r,i)=>(
+                      <BarRow key={r.key} rank={i+1} name={r.key} val={r.val}
+                        max={maxVal} color={active.color} i={i}/>
+                    ))}
+                  </div>
+                </div>
+              </Reveal>
+
+              <Reveal delay={340}>
+                <div style={{ borderRadius:20, background:"white",
+                  border:`1px solid ${T.border}`,
+                  borderTop:`3px solid ${T.red}`,
+                  boxShadow:"0 2px 16px rgba(0,0,0,0.05)", overflow:"hidden" }}>
+                  <div style={{ padding:"16px 20px", borderBottom:`1px solid ${T.border}`,
+                    display:"flex", alignItems:"center", gap:8, background:`${T.red}06` }}>
+                    <span style={{ fontSize:16 }}>⚠️</span>
+                    <span style={{ fontSize:12, fontWeight:800, color:T.textSub,
+                      textTransform:"uppercase", letterSpacing:"0.14em" }}>Needs Most Improvement</span>
+                  </div>
+                  <div style={{ padding:"8px 8px" }}>
+                    {rows.slice(-5).reverse().map((r,i)=>(
+                      <BarRow key={r.key} rank={rows.length-i} name={r.key} val={r.val}
+                        max={maxVal} color={T.red} i={i}/>
+                    ))}
+                  </div>
+                </div>
+              </Reveal>
             </div>
 
-            {/* ══ BOTTOM GRID: Leaderboard + Worst 5 ══ */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "16px" }}>
-
-              {/* Top 5 leaderboard */}
-              <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden" }}>
-                <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: active.color }} />
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.14em" }}>Top 5 Performers</span>
+            {/* ── FULL DISTRIBUTION ── */}
+            <Reveal delay={400}>
+              <div style={{ marginTop:16, borderRadius:20, background:"white",
+                border:`1px solid ${T.border}`,
+                boxShadow:"0 2px 16px rgba(0,0,0,0.05)", overflow:"hidden" }}>
+                <div style={{ padding:"16px 24px", borderBottom:`1px solid ${T.border}`,
+                  display:"flex", alignItems:"center", gap:10, background:T.bgDeep }}>
+                  <span style={{ fontSize:16 }}>📈</span>
+                  <span style={{ fontSize:12, fontWeight:800, color:T.textSub,
+                    textTransform:"uppercase", letterSpacing:"0.14em" }}>
+                    Full Distribution — All {rows.length} Entries
+                  </span>
+                  <span style={{ fontSize:11, color:T.textSub, marginLeft:4 }}>
+                    · Area above the dashed line = better than national average
+                  </span>
                 </div>
-                {rows.slice(0, 5).map((r, i) => (
-                  <div key={r.key} style={{ padding: "13px 20px", borderBottom: "1px solid rgba(255,255,255,0.03)", display: "flex", alignItems: "center", gap: "14px" }}>
-                    <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "20px", fontWeight: 700, color: i < 3 ? ["#FFD700","#C0C0C0","#CD7F32"][i] : "rgba(255,255,255,0.15)", minWidth: "24px" }}>{i+1}</span>
-                    <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.75)" }}>{r.key}</span>
-                    <div style={{ width: "60px", height: "3px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${(r.val/maxVal)*100}%`, background: active.color, borderRadius: "2px" }} />
-                    </div>
-                    <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "15px", fontWeight: 700, color: active.color, minWidth: "52px", textAlign: "right" }}>{r.val.toFixed(3)}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bottom 5 */}
-              <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden" }}>
-                <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#F87171", animation: "blink 1.5s ease-in-out infinite" }} />
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.14em" }}>Needs Attention</span>
+                <div style={{ padding:"16px 20px 8px", height:140 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={rows.map((r,i)=>({i,val:r.val,name:r.key}))}
+                      margin={{ top:4, right:4, bottom:0, left:0 }}>
+                      <defs>
+                        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%"   stopColor={active.color} stopOpacity={0.3}/>
+                          <stop offset="100%" stopColor={active.color} stopOpacity={0.02}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="2 6" stroke={T.border} vertical={false}/>
+                      <Area dataKey="val" stroke={active.color} strokeWidth={2}
+                        fill="url(#areaGrad)" dot={false}/>
+                      <ReferenceLine y={avg} stroke={active.color}
+                        strokeDasharray="5 5" strokeWidth={1.5}/>
+                      <Tooltip
+                        content={({ active:a, payload:p }) => {
+                          if (!a||!p?.length) return null;
+                          const d = p[0].payload;
+                          return (
+                            <div style={{ background:"white", borderRadius:10,
+                              padding:"8px 12px", border:`1px solid ${T.border}`,
+                              boxShadow:"0 8px 24px rgba(0,0,0,0.1)", fontSize:12 }}>
+                              <div style={{ fontWeight:700, color:T.text }}>{d.name}</div>
+                              <div style={{ color:active.color, fontFamily:"'Cormorant Garamond',serif",
+                                fontSize:15, fontWeight:700 }}>{d.val.toFixed(4)}</div>
+                            </div>
+                          );
+                        }}/>
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
-                {rows.slice(-5).reverse().map((r, i) => (
-                  <div key={r.key} style={{ padding: "13px 20px", borderBottom: "1px solid rgba(255,255,255,0.03)", display: "flex", alignItems: "center", gap: "14px" }}>
-                    <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "20px", fontWeight: 700, color: "rgba(248,113,113,0.3)", minWidth: "24px" }}>{rows.length - i}</span>
-                    <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>{r.key}</span>
-                    <div style={{ width: "60px", height: "3px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${(r.val/maxVal)*100}%`, background: "#F87171", borderRadius: "2px" }} />
-                    </div>
-                    <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "15px", fontWeight: 700, color: "#F87171", minWidth: "52px", textAlign: "right" }}>{r.val.toFixed(3)}</span>
-                  </div>
-                ))}
+                <div style={{ padding:"10px 24px 14px",
+                  fontSize:11, color:T.textSub,
+                  borderTop:`1px solid ${T.border}` }}>
+                  📌 Hover over the curve to see individual scores
+                </div>
               </div>
-            </div>
+            </Reveal>
+
+            {/* ── DATA SOURCE NOTE ── */}
+            <Reveal delay={460}>
+              <div style={{ marginTop:20, padding:"16px 24px", borderRadius:14,
+                background:`${T.orange}06`,
+                border:`1px solid ${T.orange}20`,
+                display:"flex", alignItems:"center", gap:14 }}>
+                <span style={{ fontSize:24 }}>ℹ️</span>
+                <div>
+                  <div style={{ fontSize:12, fontWeight:700, color:T.orange, marginBottom:3 }}>
+                    About this data
+                  </div>
+                  <div style={{ fontSize:12, color:T.textSub, lineHeight:1.6 }}>
+                    All scores are based on attendance, questions raised, and debate participation
+                    by Members of Parliament in the 18th Lok Sabha.
+                    Source: <strong style={{ color:T.text }}>PRS Legislative Research</strong> · Zero editorial bias.
+                  </div>
+                </div>
+              </div>
+            </Reveal>
           </>
         )}
 
+        {/* ── ERROR ── */}
         {!loading && !data && (
-          <div style={{ textAlign: "center", padding: "100px 0" }}>
-            <div style={{ fontSize: "40px", opacity: 0.1, marginBottom: "16px" }}>◎</div>
-            <div style={{ fontSize: "14px", color: "rgba(255,255,255,0.3)", marginBottom: "6px" }}>Cannot connect to Flask API</div>
-            <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.15)" }}>Make sure Flask is running on port 5000</div>
+          <div style={{ textAlign:"center", padding:"100px 0" }}>
+            <div style={{ fontSize:48, marginBottom:16 }}>📡</div>
+            <div style={{ fontSize:16, fontWeight:600, color:T.text, marginBottom:8 }}>
+              Cannot reach the data server
+            </div>
+            <div style={{ fontSize:13, color:T.textSub }}>
+              Make sure Flask is running on port 5000
+            </div>
           </div>
         )}
       </div>
-
-      <style>{`
-        @keyframes spin         { to { transform: rotate(360deg); } }
-        @keyframes blink        { 0%,100%{opacity:1} 50%{opacity:0.2} }
-        @keyframes scrollTicker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-      `}</style>
     </div>
   );
 }

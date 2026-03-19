@@ -180,7 +180,7 @@ function MadeBy() {
 
       {/* Label above */}
       <div style={{
-        fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.2)",
+        fontSize: 12, fontWeight: 700, color: "rgba(255, 255, 255, 0.71)",
         letterSpacing: "0.28em", textTransform: "uppercase",
         marginBottom: 20,
         opacity: visible ? 1 : 0,
@@ -200,7 +200,7 @@ function MadeBy() {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 18,
+          gap: 20,
           padding: "16px 28px 16px 16px",
           borderRadius: 100,
           textDecoration: "none",
@@ -307,7 +307,7 @@ function MadeBy() {
 
       {/* Bottom tagline */}
       <div style={{
-        marginTop: 20, fontSize: 10, color: "rgba(255,255,255,0.15)",
+        marginTop: 20, fontSize: 13, color: "rgba(255, 255, 255, 0.67)",
         fontFamily: "'DM Sans', sans-serif",
         letterSpacing: "0.12em",
         opacity: visible ? 1 : 0,
@@ -315,7 +315,7 @@ function MadeBy() {
         transition: "opacity 0.7s ease 0.5s, transform 0.7s ease 0.5s",
         textAlign: "center",
       }}>
-       Know Before You Vote · LokDrishti © 2026 {new Date().getFullYear()}
+       Know Before You Vote · LokDrishti ©  {new Date().getFullYear()}
       </div>
 
       <style>{`
