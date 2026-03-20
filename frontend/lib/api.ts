@@ -32,37 +32,37 @@ export const getNationalRankings = (topN?: number, page = 1, pageSize = 20) => {
   if (topN) params.set("top_n", String(topN));
   params.set("page", String(page));
   params.set("page_size", String(pageSize));
-  return fetchAPI<any>(`/rankings/national?${params}`);
+  return fetchAPI<any>(`/api/rankings/national?${params}`);
 };
 
 export const getStateRankings = (state: string, topN?: number) => {
   const params = topN ? `?top_n=${topN}` : "";
-  return fetchAPI<any>(`/rankings/state/${encodeURIComponent(state)}${params}`);
+  return fetchAPI<any>(`/api/rankings/state/${encodeURIComponent(state)}${params}`);
 };
 
 export const getPartyRankings = (party: string, topN?: number) => {
   const params = topN ? `?top_n=${topN}` : "";
-  return fetchAPI<any>(`/rankings/party/${encodeURIComponent(party)}${params}`);
+  return fetchAPI<any>(`/api/rankings/party/${encodeURIComponent(party)}${params}`);
 };
 
 export const getStateLeaderboard = () =>
-  fetchAPI<any>(`/rankings/leaderboard/state`);
+  fetchAPI<any>(`/api/rankings/leaderboard/state`);
 
 export const getPartyLeaderboard = () =>
-  fetchAPI<any>(`/rankings/leaderboard/party`);
+  fetchAPI<any>(`/api/rankings/leaderboard/party`);
 
 export const getPercentileBand = (min: number, max: number) =>
-  fetchAPI<any>(`/rankings/percentile?min=${min}&max=${max}`);
+  fetchAPI<any>(`/api/rankings/percentile?min=${min}&max=${max}`);
 
 // ── Analytics ────────────────────────────────────
 export const getStateStrength = () =>
-  fetchAPI<any>(`/analytics/state-strength`);
+  fetchAPI<any>(`/api/analytics/state-strength`);
 
 export const getPartyDominance = () =>
-  fetchAPI<any>(`/analytics/party-dominance`);
+  fetchAPI<any>(`/api/analytics/party-dominance`);
 
 export const getInequality = () =>
-  fetchAPI<any>(`/analytics/inequality`);
+  fetchAPI<any>(`/api/analytics/inequality`);
 
 export const getImbalance = () =>
-  fetchAPI<any>(`/analytics/imbalance`);
+  fetchAPI<any>(`/api/analytics/imbalance`);
