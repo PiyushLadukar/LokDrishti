@@ -262,7 +262,7 @@ function MPCard({mp,maxQ,maxDeb,avgAtt,avgQ,avgDeb,photos,onCompare,compareList,
             {/* Header */}
             <div style={{display:"flex",gap:"14px",alignItems:"flex-start",paddingTop:"8px"}}>
               <div style={{position:"relative"}}>
-                <Photo name={mp.name} url={photos[mp.name]} size={68}/>
+                <Photo name={mp.name} url={photos[mp.name?.trim().toLowerCase()]} size={68}/>
                 {/* Online status dot */}
                 <div style={{position:"absolute",bottom:2,right:2,width:12,height:12,borderRadius:"50%",
                   background:g.accent,border:"2px solid white",boxShadow:`0 0 6px ${g.accent}`}}/>
@@ -574,7 +574,23 @@ export default function MPsPage(){
         setMps(all);
       }catch{}setLoading(false);
     })();
-    fetch("/mp_photos.json").then(r=>r.json()).then(setPhotos).catch(()=>{});
+
+  fetch("/mp_photos.json")
+  .then(r => {
+    if (!r.ok) throw new Error("Failed to load photos");
+    return r.json();
+  })
+  .then((data: any[]) => {
+    const map: Record<string, string> = {};
+    data.forEach((p: any) => {
+        map[p.name.trim().toLowerCase()] = p.photo;
+    });
+    setPhotos(map);
+  })
+  .catch(err => {
+    console.error("PHOTO ERROR:", err);
+  });
+
   },[]);
 
   const avgAtt = useMemo(()=>mps.length?mps.reduce((s,m)=>s+getAttendance(m),0)/mps.length:0,[mps]);
@@ -668,7 +684,7 @@ export default function MPsPage(){
                 {photosN>0&&(
                   <div style={{display:"inline-flex",alignItems:"center",gap:"7px",padding:"7px 18px",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:"100px",backdropFilter:"blur(8px)"}}>
                     <div style={{width:8,height:8,borderRadius:"50%",background:"#22C55E",boxShadow:"0 0 10px #22C55E",animation:"pulse 2s ease infinite"}}/>
-                    <span style={{fontSize:"11px",color:"#4ADE80",fontWeight:700}}>{photosN} photos loaded</span>
+                    <span style={{fontSize:"11px",color:"#4ADE80",fontWeight:700}}>{photosN} mp's data</span>
                   </div>
                 )}
                 <div style={{display:"inline-flex",alignItems:"center",gap:"7px",padding:"7px 18px",background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.25)",borderRadius:"100px",backdropFilter:"blur(8px)"}}>
