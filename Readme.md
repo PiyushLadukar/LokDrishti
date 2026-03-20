@@ -1,106 +1,229 @@
-# LokDrishti
+# 🚀 LokDrishti
 
-### Know Before You Vote
+### 🧠 Know Before You Vote
 
-LokDrishti is a civic analytics platform that analyzes the performance of Members of Parliament using parliamentary activity data. The platform aims to improve political transparency by converting raw parliamentary data into understandable performance metrics.
+LokDrishti is an **AI-powered civic intelligence platform** that transforms raw parliamentary data into **powerful, easy-to-understand insights** about Members of Parliament (MPs).
 
----
-
-# Features
-
-• MP performance analytics
-• National, state, and party rankings
-• Legislative Contribution Index (LCI) scoring
-• Silent MP detection
-• Political performance insights
+It empowers citizens with **data-driven transparency**, helping them evaluate political performance beyond speeches and promises.
 
 ---
 
-# System Architecture
+## 🌐 Live Demo
 
-Frontend (Next.js – upcoming)
-↓
-Flask REST API
-↓
-Service Layer
-↓
-Analytics Engine
-↓
-SQLite Database
+🔗 https://lokdrishti.online
 
 ---
 
-# API Endpoints
+## ⚡ What Makes LokDrishti Unique?
 
-## MP Data
+* 📊 Converts complex parliamentary data into **visual insights**
+* 🏆 Ranks MPs across **national, state, and party levels**
+* 🤖 Uses a custom **Legislative Contribution Index (LCI)**
+* 🔍 Detects **Silent MPs** (low participation)
+* ⚖️ Integrates **Criminal Record Intelligence**
+* 🧠 Provides **AI-like civic insights for voters**
 
+---
+
+## ✨ Features
+
+### 📈 MP Intelligence Dashboard
+
+* Attendance tracking
+* Questions asked
+* Debate participation
+* Engagement Index
+* LCI Score with grading (A–F)
+
+### 🏆 Ranking System
+
+* National rankings
+* State-wise rankings
+* Party-wise rankings
+* Leaderboards
+
+### ⚠️ Civic Risk Indicators
+
+* Silent MP detection
+* Low-performance alerts
+* Criminal case tracking (IPC-based insights)
+
+### 🔎 Smart Exploration
+
+* Search MPs by name, state, constituency
+* Compare MPs side-by-side
+* Constituency finder
+
+---
+
+## 🧠 Core Metric: LCI (Legislative Contribution Index)
+
+A proprietary score combining:
+
+* Attendance
+* Questions asked
+* Debate participation
+
+👉 Provides a **single, unbiased performance score (0–1)**
+
+---
+
+## 🏗️ System Architecture
+
+```
+Frontend (Next.js + React)
+        ↓
+Flask REST API (Backend)
+        ↓
+Service Layer (Business Logic)
+        ↓
+Analytics Engine (Scoring & Ranking)
+        ↓
+SQLite Database (Structured Data)
+```
+
+---
+
+## 🔌 API Endpoints
+
+### 📊 MP Data
+
+```
 GET /api/mps
 GET /api/mps/<name>
+```
 
----
+### 🏆 Rankings
 
-## Rankings
-
+```
 GET /api/rankings/national
 GET /api/rankings/state/<state>
 GET /api/rankings/party/<party>
+GET /api/rankings/leaderboard/state
+GET /api/rankings/leaderboard/party
+```
 
----
+### 📈 Analytics
 
-## Analytics
-
+```
 GET /api/analytics/state-strength
 GET /api/analytics/party-dominance
 GET /api/analytics/inequality
 GET /api/analytics/imbalance
+```
+
+### ⚖️ Criminal Intelligence
+
+```
+GET /api/mps/<name>/criminal
+```
 
 ---
 
-# Performance Metrics
+## 📊 Performance Metrics
 
-LokDrishti calculates multiple metrics including:
+LokDrishti evaluates MPs using:
 
-• LCI Score (Legislative Contribution Index)
-• Attendance
-• Debates
-• Questions asked
-• Engagement Index
-• National Rank
-• State Rank
-• Party Rank
-• Percentile ranking
-• Silent MP detection
-
----
-
-# Tech Stack
-
-Backend
-Python
-Flask
-SQLite
-SQLAlchemy
-Pandas
-
-Frontend (Next Phase)
-Next.js
-React
-TailwindCSS
+* 📊 LCI Score
+* 📅 Attendance %
+* 💬 Questions Asked
+* 🎤 Debate Participation
+* ⚡ Engagement Index
+* 🏆 National Rank
+* 📍 State Rank
+* 🏛 Party Rank
+* 📈 Percentile Ranking
+* 🔇 Silent MP Detection
+* ⚖️ Criminal Case Analysis
 
 ---
 
-# Project Status
+## 🛠 Tech Stack
 
-Backend API Layer — Completed
-Frontend Web Application — In Progress
+### 🔙 Backend
 
-Next milestone:
-Build a Next.js dashboard to visualize MP rankings and analytics.
+* Python
+* Flask
+* SQLAlchemy
+* SQLite
+* Pandas
+
+### 🌐 Frontend
+
+* Next.js
+* React
+* Tailwind CSS
+* Vercel (Deployment)
+
+### ☁️ Deployment
+
+* Backend → Render
+* Frontend → Vercel
+* Domain → Hostinger
 
 ---
 
-# Vision
+## 📍 Project Status
 
-LokDrishti aims to make political performance transparent and accessible so citizens can make informed voting decisions.
+* ✅ Backend API — Completed
+* ✅ Deployment (Render + Vercel) — Completed
+* 🚧 Frontend UI — Advanced Development
+* 🚀 AI Insights Layer — Upcoming
 
-Know Before You Vote.
+---
+
+## 🔮 Future Roadmap
+
+* 🤖 AI-powered MP insights & summaries
+* 📊 Predictive election analytics
+* 📱 Mobile app version
+* 🌍 Public civic dashboard
+* 🗳 Voter awareness tools
+
+---
+
+## 🎯 Vision
+
+LokDrishti aims to build a future where:
+
+> **Every citizen can evaluate leaders using data, not opinions.**
+
+We believe democracy becomes stronger when voters are informed.
+
+---
+
+## 💡 Inspiration
+
+India has vast parliamentary data — but it is **complex, scattered, and inaccessible**.
+
+LokDrishti bridges that gap by making data:
+
+* Simple
+* Visual
+* Actionable
+
+---
+
+## 👨‍💻 Author
+
+**Piyush Ladukar**
+Software Developer | Civic Tech Builder
+
+---
+
+## ⭐ Support
+
+If you like this project:
+
+* ⭐ Star the repo
+* 🔁 Share it
+* 🧠 Contribute ideas
+
+---
+
+## 🇮🇳 Final Thought
+
+> Democracy is not just about voting.
+> It’s about voting **informed**.
+
+### 🔥 Know Before You Vote.

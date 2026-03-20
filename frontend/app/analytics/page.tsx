@@ -507,7 +507,7 @@ const radarD = top15.slice(0, 6).map(r => ({
   })();
 
   const share = () => {
-    navigator.clipboard.writeText(`LokDrishti · ${active.label}\n18th Lok Sabha · PRS Legislative Research`).catch(()=>{});
+    navigator.clipboard.writeText('https://lokdrishti.online/').catch(()=>{});
     setCopied(true); setTimeout(()=>setCopied(false),2000);
   };
 //
