@@ -66,3 +66,4 @@ export const getInequality = () =>
 
 export const getImbalance = () =>
   fetchAPI<any>(`/api/analytics/imbalance`);
+
