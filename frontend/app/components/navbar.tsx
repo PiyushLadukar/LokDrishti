@@ -103,6 +103,7 @@ export default function Navbar() {
             {[
               { href: "/ranking",   label: "Rankings"  },
               { href: "/analytics", label: "Analytics" },
+              { href: "/about", label: "About" },
             ].map((link) => (
               <Link key={link.href} href={link.href} style={{
                 padding: "8px 16px", borderRadius: "6px", textDecoration: "none",
