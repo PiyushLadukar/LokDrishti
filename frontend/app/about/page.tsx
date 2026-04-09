@@ -343,6 +343,12 @@ export default function AboutPage() {
         </div>
       </div>
 
+
+
+
+
+
+
       {/* ══ WHAT IS IT ════════════════════════════════════════ */}
       <section style={{ background: "white", padding: "80px 64px",
         borderBottom: "1px solid #E5DDD5" }}>
