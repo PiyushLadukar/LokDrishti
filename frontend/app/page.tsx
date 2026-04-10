@@ -408,11 +408,11 @@ export default function Home() {
         {/* Parallax LOK watermark */}
         <div style={{ position:"absolute", left:-20, top:"50%",
           transform:`translateY(calc(-52% + ${scrollY*0.14}px))`,
-          fontFamily:"'Cormorant Garamond',serif", fontSize:"clamp(200px,28vw,420px)",
-          fontWeight:900, lineHeight:0.85, letterSpacing:-8,
-          color:"transparent", WebkitTextStroke:"1.5px rgba(10,22,40,0.04)",
+          fontFamily:"'Cormorant Garamond',serif", fontSize:"clamp(150px,28vw,330px)",
+          fontWeight:800, lineHeight:0.85, letterSpacing:-8,
+          color:"transparent", WebkitTextStroke:"1.8px rgba(2, 5, 10, 0.04)",
           userSelect:"none", pointerEvents:"none", zIndex:0, whiteSpace:"nowrap",
-          willChange:"transform" }}>LOK</div>
+          willChange:"transform" }}>लोकदृष्टि</div>
 
         {/* Dot grid */}
         <div style={{ position:"absolute", inset:0, zIndex:0,
