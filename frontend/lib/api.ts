@@ -1,5 +1,5 @@
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "https://lokdrishti-production.up.railway.app/api";
+   process.env.NEXT_PUBLIC_API_URL || "https://lokdrishti-production.up.railway.app";
 async function fetchAPI<T>(endpoint: string): Promise<T> {
   const res = await fetch(`${API_BASE}${endpoint}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
