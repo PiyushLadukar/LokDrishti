@@ -236,7 +236,7 @@ export default function MPProfilePage() {
   const prev = parseInt(localStorage.getItem("ld_mps_viewed") || "0");
   localStorage.setItem("ld_mps_viewed", String(prev + 1));
   
-    fetch(`https://lokdrishti.onrender.com/api/mps/${encodeURIComponent(name)}/criminal`)
+    fetch(`https://lokdrishti-production.up.railway.app/api/mps/${encodeURIComponent(name)}/criminal`)
      .then(r => r.json())
      .then(d => setCriminal(d.criminal_record))
      .catch(()=>{});
