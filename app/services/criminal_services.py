@@ -1,6 +1,8 @@
 import json
+import os
 
-DATA_FILE = "data/criminal_records.json"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATA_FILE = os.path.join(BASE_DIR, "data", "criminal_records.json")
 
 with open(DATA_FILE, "r", encoding="utf-8") as f:
     criminal_data = json.load(f)
